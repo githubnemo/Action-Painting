@@ -219,16 +219,19 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	float texXpos;
 	float texYpos;
 
+	XnUInt16 nXRes = dmd.XRes();
+	XnUInt16 nYRes = dmd.YRes();
+
 	if(!bInitialized)
 	{
-		texWidth =  getClosestPowerOfTwo(dmd.XRes());
-		texHeight = getClosestPowerOfTwo(dmd.YRes());
+		texWidth =  getClosestPowerOfTwo(nXRes);
+		texHeight = getClosestPowerOfTwo(nYRes);
 
 		// Initialize pDepthTexBuf char*texWidth*texHeight*4
 		depthTexID = initTexture((void**)&pDepthTexBuf,texWidth, texHeight) ;
 
-		texXpos =(float)dmd.XRes()/texWidth;
-		texYpos  =(float)dmd.YRes()/texHeight;
+		texXpos =(float)nXRes/texWidth;
+		texYpos  =(float)nYRes/texHeight;
 
 		memset(texcoords, 0, 8*sizeof(float));
 		texcoords[0] = texXpos,
@@ -238,9 +241,6 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 
 		bInitialized = true;
 	}
-
-	XnUInt16 g_nXRes = dmd.XRes();
-	XnUInt16 g_nYRes = dmd.YRes();
 
 	unsigned char* pDestImage = pDepthTexBuf;
 	const XnLabel* pLabels = smd.Data();
@@ -255,9 +255,9 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		const XnUInt8* pBgImage = (const XnUInt8*)pCvBgImage->imageData;
 
 		// Prepare the texture map
-		for (unsigned int nY=0; nY<g_nYRes; nY++)
+		for (unsigned int nY=0; nY < nYRes; nY++)
 		{
-			for (unsigned int nX=0; nX < g_nXRes; nX++)
+			for (unsigned int nX=0; nX < nXRes; nX++)
 			{
 				XnLabel label = *pLabels;
 
@@ -292,8 +292,8 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 				pDestImage+=3;
 			}
 
-			pDestImage += (texWidth - g_nXRes) *3;
-			pBgImage += (pCvBgImage->widthStep - g_nXRes*3);
+			pDestImage += (texWidth - nXRes) *3;
+			pBgImage += (pCvBgImage->widthStep - nXRes*3);
 		}
 	}
 
@@ -305,7 +305,7 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	glColor4f(1,1,1,1);
 
 	glEnable(GL_TEXTURE_2D);
-	DrawTexture(dmd.XRes(),dmd.YRes(),0,0);
+	DrawTexture(nXRes,nYRes,0,0);
 	glDisable(GL_TEXTURE_2D);
 
 	DrawUserLabels(player);
