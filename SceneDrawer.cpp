@@ -246,7 +246,11 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	const XnLabel* pLabels = smd.Data();
 
 	{
+		// Real world image data
 		const XnUInt8* pImage = imd.Data();
+		unsigned int nImdXRes = imd.XRes();
+
+		// Background image data
 		IplImage* pCvBgImage = getBackgroundImage();
 		const XnUInt8* pBgImage = (const XnUInt8*)pCvBgImage->imageData;
 
@@ -275,14 +279,15 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 
 				} else {
 					// Player detected, use player image
-					pDestImage[0] = pImage[0];
-					pDestImage[1] = pImage[1];
-					pDestImage[2] = pImage[2];
+					int offset = nY * nImdXRes * 3 + nX * 3;
+
+					pDestImage[0] = pImage[offset + 0];
+					pDestImage[1] = pImage[offset + 1];
+					pDestImage[2] = pImage[offset + 2];
 				}
 
 
 				pLabels++;
-				pImage+=3;
 				pBgImage+=3;
 				pDestImage+=3;
 			}
