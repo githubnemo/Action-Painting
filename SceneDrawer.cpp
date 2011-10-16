@@ -302,7 +302,7 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pDepthTexBuf);
 
 	// Display the OpenGL texture map
-	glColor4f(0.75,0.75,0.75,1);
+	glColor4f(1,1,1,1);
 
 	glEnable(GL_TEXTURE_2D);
 	DrawTexture(dmd.XRes(),dmd.YRes(),0,0);
