@@ -269,9 +269,9 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 					if(nY > pCvBgImage->height || nX > pCvBgImage->width) {
 						r = 0; g = 0; b = 0;
 					} else {
-						r= pBgImage[0];
+						r= pBgImage[2];
 						g= pBgImage[1];
-						b= pBgImage[2];
+						b= pBgImage[0];
 					}
 
 					pDestImage[0] = r;
