@@ -143,6 +143,56 @@ IplImage* getBackgroundImage() {
 	return g_pBgImg;
 }
 
+void DrawUserLabels(XnUserID player) {
+	char strLabel[20] = "";
+	XnUserID aUsers[15];
+	XnUInt16 nUsers = 15;
+	g_UserGenerator.GetUsers(aUsers, nUsers);
+	for (int i = 0; i < nUsers; ++i)
+	{
+		XnPoint3D com;
+		g_UserGenerator.GetCoM(aUsers[i], com);
+		g_DepthGenerator.ConvertRealWorldToProjective(1, &com, &com);
+
+		if (aUsers[i] == player)
+			sprintf(strLabel, "%d (Player)", aUsers[i]);
+		else
+			sprintf(strLabel, "%d. Thing", aUsers[i]);
+
+		glColor4f(1-Colors[i%nColors][0], 1-Colors[i%nColors][1], 1-Colors[i%nColors][2], 1);
+
+		glRasterPos2i(com.X, com.Y);
+		glPrintString(GLUT_BITMAP_HELVETICA_18, strLabel);
+	}
+}
+
+
+void DrawPlayerSkeleton(XnUserID player) {
+	glBegin(GL_LINES);
+	glColor4f(1-Colors[player%nColors][0], 1-Colors[player%nColors][1], 1-Colors[player%nColors][2], 1);
+	DrawLimb(player, XN_SKEL_HEAD, XN_SKEL_NECK);
+
+	DrawLimb(player, XN_SKEL_NECK, XN_SKEL_LEFT_SHOULDER);
+	DrawLimb(player, XN_SKEL_LEFT_SHOULDER, XN_SKEL_LEFT_ELBOW);
+	DrawLimb(player, XN_SKEL_LEFT_ELBOW, XN_SKEL_LEFT_HAND);
+
+	DrawLimb(player, XN_SKEL_NECK, XN_SKEL_RIGHT_SHOULDER);
+	DrawLimb(player, XN_SKEL_RIGHT_SHOULDER, XN_SKEL_RIGHT_ELBOW);
+	DrawLimb(player, XN_SKEL_RIGHT_ELBOW, XN_SKEL_RIGHT_HAND);
+
+	DrawLimb(player, XN_SKEL_LEFT_SHOULDER, XN_SKEL_TORSO);
+	DrawLimb(player, XN_SKEL_RIGHT_SHOULDER, XN_SKEL_TORSO);
+
+	DrawLimb(player, XN_SKEL_TORSO, XN_SKEL_LEFT_HIP);
+	DrawLimb(player, XN_SKEL_LEFT_HIP, XN_SKEL_LEFT_KNEE);
+	DrawLimb(player, XN_SKEL_LEFT_KNEE, XN_SKEL_LEFT_FOOT);
+
+	DrawLimb(player, XN_SKEL_TORSO, XN_SKEL_RIGHT_HIP);
+	DrawLimb(player, XN_SKEL_RIGHT_HIP, XN_SKEL_RIGHT_KNEE);
+	DrawLimb(player, XN_SKEL_RIGHT_KNEE, XN_SKEL_RIGHT_FOOT);
+	glEnd();
+}
+
 
 void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		const xn::ImageMetaData& imd, XnUserID player)
@@ -196,35 +246,6 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	const XnDepthPixel* pDepth = dmd.Data();
 	const XnLabel* pLabels = smd.Data();
 
-	// Calculate the accumulative histogram
-	memset(g_pDepthHist, 0, MAX_DEPTH*sizeof(float));
-	for (nY=0; nY<g_nYRes; nY++)
-	{
-		for (nX=0; nX<g_nXRes; nX++)
-		{
-			nValue = *pDepth;
-
-			if (nValue != 0)
-			{
-				g_pDepthHist[nValue]++;
-				nNumberOfPoints++;
-			}
-
-			pDepth++;
-		}
-	}
-
-	for (nIndex=1; nIndex<MAX_DEPTH; nIndex++)
-	{
-		g_pDepthHist[nIndex] += g_pDepthHist[nIndex-1];
-	}
-	if (nNumberOfPoints)
-	{
-		for (nIndex=1; nIndex<MAX_DEPTH; nIndex++)
-		{
-			g_pDepthHist[nIndex] = (unsigned int)(256 * (1.0f - (g_pDepthHist[nIndex] / nNumberOfPoints)));
-		}
-	}
 
 	pDepth = dmd.Data();
 	{
@@ -240,41 +261,30 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 			{
 				nValue = *pDepth;
 				XnLabel label = *pLabels;
-				XnUInt32 nColorID = label % nColors;
 
-				if (nValue != 0)
-				{
-					if(label == 0) {
-						// Draw background image
-						nHistValue = g_pDepthHist[nValue];
-						XnUInt8 r,g,b;
+				if(label == 0) {
+					// Draw background image
+					XnUInt8 r,g,b;
 
-						if(nY > pCvBgImage->height || nX > pCvBgImage->width) {
-							r = 0; g = 0; b = 0;
-						} else {
-							r= pBgImage[0];
-							g= pBgImage[1];
-							b= pBgImage[2];
-						}
-
-						pDestImage[0] = r;
-						pDestImage[1] = g;
-						pDestImage[2] = b;
-
+					if(nY > pCvBgImage->height || nX > pCvBgImage->width) {
+						r = 0; g = 0; b = 0;
 					} else {
-						// Player detected, use player image
-						pDestImage[0] = pImage[0];
-						pDestImage[1] = pImage[1];
-						pDestImage[2] = pImage[2];
+						r= pBgImage[0];
+						g= pBgImage[1];
+						b= pBgImage[2];
 					}
+
+					pDestImage[0] = r;
+					pDestImage[1] = g;
+					pDestImage[2] = b;
+
+				} else {
+					// Player detected, use player image
+					pDestImage[0] = pImage[0];
+					pDestImage[1] = pImage[1];
+					pDestImage[2] = pImage[2];
 				}
-				else
-				{
-					// Depth level 0 => Black
-					pDestImage[0] = 0;
-					pDestImage[1] = 0;
-					pDestImage[2] = 0;
-				}
+
 
 				pDepth++;
 				pLabels++;
@@ -298,52 +308,11 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	DrawTexture(dmd.XRes(),dmd.YRes(),0,0);
 	glDisable(GL_TEXTURE_2D);
 
-	char strLabel[20] = "";
-	XnUserID aUsers[15];
-	XnUInt16 nUsers = 15;
-	g_UserGenerator.GetUsers(aUsers, nUsers);
-	for (int i = 0; i < nUsers; ++i)
-	{
-		XnPoint3D com;
-		g_UserGenerator.GetCoM(aUsers[i], com);
-		g_DepthGenerator.ConvertRealWorldToProjective(1, &com, &com);
-
-		if (aUsers[i] == player)
-			sprintf(strLabel, "%d (Player)", aUsers[i]);
-		else
-			sprintf(strLabel, "%d WTF?:D", aUsers[i]);
-
-		glColor4f(1-Colors[i%nColors][0], 1-Colors[i%nColors][1], 1-Colors[i%nColors][2], 1);
-
-		glRasterPos2i(com.X, com.Y);
-		glPrintString(GLUT_BITMAP_HELVETICA_18, strLabel);
-	}
+	DrawUserLabels(player);
 
 	// Draw skeleton of user
 	if (player != 0)
 	{
-		glBegin(GL_LINES);
-		glColor4f(1-Colors[player%nColors][0], 1-Colors[player%nColors][1], 1-Colors[player%nColors][2], 1);
-		DrawLimb(player, XN_SKEL_HEAD, XN_SKEL_NECK);
-
-		DrawLimb(player, XN_SKEL_NECK, XN_SKEL_LEFT_SHOULDER);
-		DrawLimb(player, XN_SKEL_LEFT_SHOULDER, XN_SKEL_LEFT_ELBOW);
-		DrawLimb(player, XN_SKEL_LEFT_ELBOW, XN_SKEL_LEFT_HAND);
-
-		DrawLimb(player, XN_SKEL_NECK, XN_SKEL_RIGHT_SHOULDER);
-		DrawLimb(player, XN_SKEL_RIGHT_SHOULDER, XN_SKEL_RIGHT_ELBOW);
-		DrawLimb(player, XN_SKEL_RIGHT_ELBOW, XN_SKEL_RIGHT_HAND);
-
-		DrawLimb(player, XN_SKEL_LEFT_SHOULDER, XN_SKEL_TORSO);
-		DrawLimb(player, XN_SKEL_RIGHT_SHOULDER, XN_SKEL_TORSO);
-
-		DrawLimb(player, XN_SKEL_TORSO, XN_SKEL_LEFT_HIP);
-		DrawLimb(player, XN_SKEL_LEFT_HIP, XN_SKEL_LEFT_KNEE);
-		DrawLimb(player, XN_SKEL_LEFT_KNEE, XN_SKEL_LEFT_FOOT);
-
-		DrawLimb(player, XN_SKEL_TORSO, XN_SKEL_RIGHT_HIP);
-		DrawLimb(player, XN_SKEL_RIGHT_HIP, XN_SKEL_RIGHT_KNEE);
-		DrawLimb(player, XN_SKEL_RIGHT_KNEE, XN_SKEL_RIGHT_FOOT);
-		glEnd();
+		DrawPlayerSkeleton(player);
 	}
 }
