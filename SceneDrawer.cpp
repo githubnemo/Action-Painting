@@ -17,12 +17,17 @@
 #include "opengles.h"
 #endif
 
+#include <cv.h>
+#include <highgui.h>
+
 extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
 
 #define MAX_DEPTH 10000
 float g_pDepthHist[MAX_DEPTH];
+IplImage* g_pBgImg = NULL;
+
 unsigned int getClosestPowerOfTwo(unsigned int n)
 {
 	unsigned int m = 2;
@@ -128,6 +133,17 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 }
 
 
+IplImage* getBackgroundImage() {
+	if(g_pBgImg == NULL) {
+		IplImage* img = cvLoadImage("/home/nemo/Code/KinectProject/NITE/Samples/MyPlayers/background.jpg");
+
+		g_pBgImg = img;
+	}
+
+	return g_pBgImg;
+}
+
+
 void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		const xn::ImageMetaData& imd, XnUserID player)
 {
@@ -213,6 +229,8 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	pDepth = dmd.Data();
 	{
 		const XnUInt8* pImage = imd.Data();
+		IplImage* pCvBgImage = getBackgroundImage();
+		const XnUInt8* pBgImage = (const XnUInt8*)pCvBgImage->imageData;
 
 		XnUInt32 nIndex = 0;
 		// Prepare the texture map
@@ -223,20 +241,28 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 				nValue = *pDepth;
 				XnLabel label = *pLabels;
 				XnUInt32 nColorID = label % nColors;
-				if (label == 0)
-				{
-					nColorID = nColors;
-				}
 
 				if (nValue != 0)
 				{
-					nHistValue = g_pDepthHist[nValue];
+					if(label == 0) {
+						// Draw background image
+						nHistValue = g_pDepthHist[nValue];
+						XnUInt8 r,g,b;
 
-					pDestImage[0] = nHistValue * Colors[nColorID][0];
-					pDestImage[1] = nHistValue * Colors[nColorID][1];
-					pDestImage[2] = nHistValue * Colors[nColorID][2];
+						if(nY > pCvBgImage->height || nX > pCvBgImage->width) {
+							r = 0; g = 0; b = 0;
+						} else {
+							r= pBgImage[0];
+							g= pBgImage[1];
+							b= pBgImage[2];
+						}
 
-					if(label > 0) { // there's a player :)
+						pDestImage[0] = r;
+						pDestImage[1] = g;
+						pDestImage[2] = b;
+
+					} else {
+						// Player detected, use player image
 						pDestImage[0] = pImage[0];
 						pDestImage[1] = pImage[1];
 						pDestImage[2] = pImage[2];
@@ -244,6 +270,7 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 				}
 				else
 				{
+					// Depth level 0 => Black
 					pDestImage[0] = 0;
 					pDestImage[1] = 0;
 					pDestImage[2] = 0;
@@ -252,10 +279,12 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 				pDepth++;
 				pLabels++;
 				pImage+=3;
+				pBgImage+=3;
 				pDestImage+=3;
 			}
 
 			pDestImage += (texWidth - g_nXRes) *3;
+			pBgImage += (pCvBgImage->widthStep - g_nXRes*3);
 		}
 	}
 

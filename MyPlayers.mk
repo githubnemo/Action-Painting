@@ -18,5 +18,9 @@ else
         USED_LIBS += glut
 endif
 
+USED_LIBS += cv
+USED_LIBS += highgui
+INC_DIRS += /usr/include/opencv
+
 include ../NiteSampleMakefile
 
