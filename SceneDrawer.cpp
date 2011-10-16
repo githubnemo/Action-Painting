@@ -25,8 +25,9 @@ extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
 
 #define MAX_DEPTH 10000
-float g_pDepthHist[MAX_DEPTH];
-IplImage* g_pBgImg = NULL;
+
+IplImage* g_pBgImg;
+
 
 unsigned int getClosestPowerOfTwo(unsigned int n)
 {
@@ -35,6 +36,8 @@ unsigned int getClosestPowerOfTwo(unsigned int n)
 
 	return m;
 }
+
+
 GLuint initTexture(void** buf, int& width, int& height)
 {
 	GLuint texID = 0;
@@ -51,20 +54,25 @@ GLuint initTexture(void** buf, int& width, int& height)
 	return texID;
 }
 
+
 GLfloat texcoords[8];
 void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
-	GLfloat verts[8] = {	topLeftX, topLeftY,
+	GLfloat verts[8] = {
+		topLeftX, topLeftY,
 		topLeftX, bottomRightY,
 		bottomRightX, bottomRightY,
 		bottomRightX, topLeftY
 	};
+
 	glVertexPointer(2, GL_FLOAT, 0, verts);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	//TODO: Maybe glFinish needed here instead - if there's some bad graphics crap
 	glFlush();
 }
+
+
 void DrawTexture(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -74,6 +82,7 @@ void DrawTexture(float topLeftX, float topLeftY, float bottomRightX, float botto
 
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
+
 
 XnFloat Colors[][3] =
 {
@@ -91,6 +100,7 @@ XnFloat Colors[][3] =
 };
 XnUInt32 nColors = 10;
 
+
 void glPrintString(void *font, char *str)
 {
 	size_t i,l = strlen(str);
@@ -101,6 +111,8 @@ void glPrintString(void *font, char *str)
 	}
 }
 
+
+// Draws part of the player's skeleton, conneting two parts with a line
 void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 {
 	if (!g_UserGenerator.GetSkeletonCap().IsCalibrated(player))
@@ -133,6 +145,7 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 }
 
 
+// Return reference to the cv IplImage of the background image
 IplImage* getBackgroundImage() {
 	if(g_pBgImg == NULL) {
 		IplImage* img = cvLoadImage("/home/nemo/Code/KinectProject/NITE/Samples/MyPlayers/background.jpg");
@@ -142,6 +155,7 @@ IplImage* getBackgroundImage() {
 
 	return g_pBgImg;
 }
+
 
 void DrawUserLabels(XnUserID player) {
 	char strLabel[20] = "";
@@ -202,64 +216,45 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	static unsigned char* pDepthTexBuf;
 	static int texWidth, texHeight;
 
-	 float topLeftX;
-	 float topLeftY;
-	 float bottomRightY;
-	 float bottomRightX;
 	float texXpos;
 	float texYpos;
 
 	if(!bInitialized)
 	{
-
 		texWidth =  getClosestPowerOfTwo(dmd.XRes());
 		texHeight = getClosestPowerOfTwo(dmd.YRes());
 
-//		printf("Initializing depth texture: width = %d, height = %d\n", texWidth, texHeight);
+		// Initialize pDepthTexBuf char*texWidth*texHeight*4
 		depthTexID = initTexture((void**)&pDepthTexBuf,texWidth, texHeight) ;
 
-//		printf("Initialized depth texture: width = %d, height = %d\n", texWidth, texHeight);
-		bInitialized = true;
-
-		topLeftX = dmd.XRes();
-		topLeftY = 0;
-		bottomRightY = dmd.YRes();
-		bottomRightX = 0;
 		texXpos =(float)dmd.XRes()/texWidth;
 		texYpos  =(float)dmd.YRes()/texHeight;
 
 		memset(texcoords, 0, 8*sizeof(float));
-		texcoords[0] = texXpos, texcoords[1] = texYpos, texcoords[2] = texXpos, texcoords[7] = texYpos;
+		texcoords[0] = texXpos,
+		texcoords[1] = texYpos,
+		texcoords[2] = texXpos,
+		texcoords[7] = texYpos;
 
+		bInitialized = true;
 	}
-	unsigned int nValue = 0;
-	unsigned int nHistValue = 0;
-	unsigned int nIndex = 0;
-	unsigned int nX = 0;
-	unsigned int nY = 0;
-	unsigned int nNumberOfPoints = 0;
+
 	XnUInt16 g_nXRes = dmd.XRes();
 	XnUInt16 g_nYRes = dmd.YRes();
 
 	unsigned char* pDestImage = pDepthTexBuf;
-
-	const XnDepthPixel* pDepth = dmd.Data();
 	const XnLabel* pLabels = smd.Data();
 
-
-	pDepth = dmd.Data();
 	{
 		const XnUInt8* pImage = imd.Data();
 		IplImage* pCvBgImage = getBackgroundImage();
 		const XnUInt8* pBgImage = (const XnUInt8*)pCvBgImage->imageData;
 
-		XnUInt32 nIndex = 0;
 		// Prepare the texture map
-		for (nY=0; nY<g_nYRes; nY++)
+		for (unsigned int nY=0; nY<g_nYRes; nY++)
 		{
-			for (nX=0; nX < g_nXRes; nX++, nIndex++)
+			for (unsigned int nX=0; nX < g_nXRes; nX++)
 			{
-				nValue = *pDepth;
 				XnLabel label = *pLabels;
 
 				if(label == 0) {
@@ -286,7 +281,6 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 				}
 
 
-				pDepth++;
 				pLabels++;
 				pImage+=3;
 				pBgImage+=3;
@@ -299,7 +293,8 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	}
 
 	glBindTexture(GL_TEXTURE_2D, depthTexID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pDepthTexBuf);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0,
+				GL_RGB, GL_UNSIGNED_BYTE, pDepthTexBuf);
 
 	// Display the OpenGL texture map
 	glColor4f(1,1,1,1);
