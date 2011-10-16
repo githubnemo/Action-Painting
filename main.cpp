@@ -38,8 +38,8 @@ static EGLSurface surface = EGL_NO_SURFACE;
 static EGLContext context = EGL_NO_CONTEXT;
 #endif
 
-#define GL_WIN_SIZE_X 720
-#define GL_WIN_SIZE_Y 480
+#define GL_WIN_SIZE_X 960
+#define GL_WIN_SIZE_Y 720
 #define START_CAPTURE_CHECK_RC(rc, what)												\
 	if (nRetVal != XN_STATUS_OK)														\
 {																					\
