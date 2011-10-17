@@ -40,74 +40,19 @@ static EGLContext context = EGL_NO_CONTEXT;
 
 #define GL_WIN_SIZE_X 960
 #define GL_WIN_SIZE_Y 720
-#define START_CAPTURE_CHECK_RC(rc, what)												\
-	if (nRetVal != XN_STATUS_OK)														\
-{																					\
-	printf("Failed to %s: %s\n", what, xnGetStatusString(rc));				\
-	StopCapture();															\
-	return ;																	\
-}
+
 
 XnBool g_bPause = false;
 XnBool g_bRecord = false;
-
 XnBool g_bQuit = false;
-void StopCapture()
-{
-	g_bRecord = false;
-	if (g_pRecorder != NULL)
-	{
-		g_pRecorder->RemoveNodeFromRecording(g_DepthGenerator);
-		g_pRecorder->Release();
-		delete g_pRecorder;
-	}
-	g_pRecorder = NULL;
-}
+
+
 
 void CleanupExit()
 {
-	if (g_pRecorder)
-		g_pRecorder->RemoveNodeFromRecording(g_DepthGenerator);
-	StopCapture();
-
 	exit (1);
 }
 
-void StartCapture()
-{
-	char recordFile[256] = {0};
-	time_t rawtime;
-	struct tm *timeinfo;
-
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-        XnUInt32 size;
-        xnOSStrFormat(recordFile, sizeof(recordFile)-1, &size,
-                 "%d_%02d_%02d[%02d_%02d_%02d].oni",
-                timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-
-	if (g_pRecorder != NULL)
-	{
-		StopCapture();
-	}
-
-	XnStatus nRetVal = XN_STATUS_OK;
-	g_pRecorder = new xn::Recorder;
-
-	g_Context.CreateAnyProductionTree(XN_NODE_TYPE_RECORDER, NULL, *g_pRecorder);
-	START_CAPTURE_CHECK_RC(nRetVal, "Create recorder");
-
-	nRetVal = g_pRecorder->SetDestination(XN_RECORD_MEDIUM_FILE, recordFile);
-	START_CAPTURE_CHECK_RC(nRetVal, "set destination");
-	nRetVal = g_pRecorder->AddNodeToRecording(g_DepthGenerator, XN_CODEC_16Z_EMB_TABLES);
-	START_CAPTURE_CHECK_RC(nRetVal, "add node");
-
-	//g_Context.CreateAnyProductionTree(XN_NODE_TYPE_IMAGE, NULL, g_ImageGenerator, NULL);
-	nRetVal = g_pRecorder->AddNodeToRecording(g_ImageGenerator, XN_CODEC_JPEG);
-	START_CAPTURE_CHECK_RC(nRetVal, "add node");
-
-	g_bRecord = true;
-}
 
 XnBool AssignPlayer(XnUserID user)
 {
@@ -126,6 +71,8 @@ XnBool AssignPlayer(XnUserID user)
 	return TRUE;
 
 }
+
+
 void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
 	if (!g_bCalibrated) // check on player0 is enough
@@ -144,6 +91,8 @@ void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void*
 // 		g_nPlayer = user;
 // 	}
 }
+
+
 void FindPlayer()
 {
 	if (g_nPlayer != 0)
@@ -160,12 +109,16 @@ void FindPlayer()
 			return;
 	}
 }
+
+
 void LostPlayer()
 {
 	g_nPlayer = 0;
 	FindPlayer();
 
 }
+
+
 void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
 	printf("Lost user %d\n", user);
@@ -174,6 +127,8 @@ void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void
 		LostPlayer();
 	}
 }
+
+
 void XN_CALLBACK_TYPE PoseDetected(xn::PoseDetectionCapability& pose, const XnChar* strPose, XnUserID user, void* cxt)
 {
 	printf("Found pose \"%s\" for user %d\n", strPose, user);
@@ -181,10 +136,12 @@ void XN_CALLBACK_TYPE PoseDetected(xn::PoseDetectionCapability& pose, const XnCh
 	g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(user);
 }
 
+
 void XN_CALLBACK_TYPE CalibrationStarted(xn::SkeletonCapability& skeleton, XnUserID user, void* cxt)
 {
 	printf("Calibration started\n");
 }
+
 
 void XN_CALLBACK_TYPE CalibrationEnded(xn::SkeletonCapability& skeleton, XnUserID user, XnBool bSuccess, void* cxt)
 {
@@ -207,6 +164,7 @@ void XN_CALLBACK_TYPE CalibrationEnded(xn::SkeletonCapability& skeleton, XnUserI
 	}
 }
 
+
 void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton, XnUserID user, XnCalibrationStatus eStatus, void* cxt)
 {
 	printf("Calibration done [%d] %ssuccessfully\n", user, (eStatus == XN_CALIBRATION_STATUS_OK)?"":"un");
@@ -227,6 +185,7 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton, XnU
 			g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(aUsers[i]);
 	}
 }
+
 
 void DrawProjectivePoints(XnPoint3D& ptIn, int width, double r, double g, double b)
 {
@@ -321,13 +280,6 @@ void glutKeyboard (unsigned char key, int x, int y)
 	case'p':
 		g_bPause = !g_bPause;
 		break;
-	case 'k':
-		if (g_pRecorder == NULL)
-			StartCapture();
-		else
-			StopCapture();
-		printf("Record turned %s\n", g_pRecorder ? "on" : "off");
-		break;
 	}
 }
 void glInit (int * pargc, char ** argv)
@@ -393,16 +345,8 @@ int main(int argc, char **argv)
 		return XN_STATUS_ERROR;
 	}
 
-	printf("%d\n", g_DepthGenerator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT));
-	printf("%d\n", g_DepthGenerator.GetAlternativeViewPointCap().IsViewPointSupported(g_ImageGenerator));
-	printf("%d\n", g_DepthGenerator.GetAlternativeViewPointCap().IsViewPointAs(g_ImageGenerator));
-
 	g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 	XnStatus s = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
-
-	printf("%s\n", xnGetStatusString(s));
-
-	printf("%d\n", g_DepthGenerator.GetAlternativeViewPointCap().IsViewPointAs(g_ImageGenerator));
 
 	rc = g_Context.StartGeneratingAll();
 	CHECK_RC(rc, "StartGenerating");
