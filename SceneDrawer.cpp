@@ -148,7 +148,7 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 // Return reference to the cv IplImage of the background image
 IplImage* getBackgroundImage() {
 	if(g_pBgImg == NULL) {
-		IplImage* img = cvLoadImage("/home/nemo/Code/KinectProject/NITE/Samples/MyPlayers/background.jpg");
+		IplImage* img = cvLoadImage("Data/background.jpg");
 
 		g_pBgImg = img;
 	}
@@ -228,7 +228,7 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		texHeight = getClosestPowerOfTwo(nYRes);
 
 		// Initialize pDepthTexBuf char*texWidth*texHeight*4
-		depthTexID = initTexture((void**)&pDepthTexBuf,texWidth, texHeight) ;
+		depthTexID = initTexture((void**)&pDepthTexBuf, texWidth, texHeight) ;
 
 		texXpos =(float)nXRes/texWidth;
 		texYpos  =(float)nYRes/texHeight;
