@@ -393,7 +393,16 @@ int main(int argc, char **argv)
 		return XN_STATUS_ERROR;
 	}
 
+	printf("%d\n", g_DepthGenerator.IsCapabilitySupported(XN_CAPABILITY_ALTERNATIVE_VIEW_POINT));
+	printf("%d\n", g_DepthGenerator.GetAlternativeViewPointCap().IsViewPointSupported(g_ImageGenerator));
+	printf("%d\n", g_DepthGenerator.GetAlternativeViewPointCap().IsViewPointAs(g_ImageGenerator));
+
 	g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
+	XnStatus s = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
+
+	printf("%s\n", xnGetStatusString(s));
+
+	printf("%d\n", g_DepthGenerator.GetAlternativeViewPointCap().IsViewPointAs(g_ImageGenerator));
 
 	rc = g_Context.StartGeneratingAll();
 	CHECK_RC(rc, "StartGenerating");
