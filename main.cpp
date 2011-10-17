@@ -351,7 +351,7 @@ void glInit (int * pargc, char ** argv)
 }
 #endif
 
-#define SAMPLE_XML_PATH "../../../Data/Sample-Players.xml"
+#define SAMPLE_XML_PATH "./Data/Sample-Players.xml"
 
 #define CHECK_RC(rc, what)											\
 	if (rc != XN_STATUS_OK)											\
