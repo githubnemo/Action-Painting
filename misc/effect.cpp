@@ -4,25 +4,18 @@
 #include <highgui.h>
 
 
-using namespace cv;
 
 IplImage* effect(IplImage * source, int someValue) {
 
 	int height, width, step, channels;
 
-	
+	cv::Size targetSize = cv::Size(640, 400);
 
-	cv::Size theSize = cv::Size(640, 400);
-	IplImage * target = cvCreateImage(theSize, source->depth, source->nChannels);
-	IplImage * laplace = cvCreateImage(theSize, source->depth, source->nChannels);
+	IplImage * target = cvCreateImage(targetSize, source->depth, source->nChannels);
+	IplImage * laplace = cvCreateImage(targetSize, source->depth, source->nChannels);
 
 	cvResize(source, target, CV_INTER_LINEAR);
 	cvCopy(target, laplace);
-	//IplImage * foobar = &IplImage(target);
-	//*img = foobar;
-	
-
-	//cv::Mat lala(foobar);
 
 	uchar* data, *laplaceData;
 
@@ -30,34 +23,38 @@ IplImage* effect(IplImage * source, int someValue) {
 	width     = target->width;
 	step      = target->widthStep;
 	channels  = target->nChannels;
+	
 	data = (uchar*) target->imageData;
 	laplaceData = (uchar*) laplace->imageData;
 
 	
 	cv::Size * largeBlur = new cv::Size(15, 15);
-	Size * smallBlur = new cv::Size(someValue+1, someValue+1);
+	cv::Size * smallBlur = new cv::Size(someValue+1, someValue+1);
 
-	Mat a1 = Mat(target); 
-	Mat laplaceMat = Mat(laplace);
-	//cv::GaussianBlur( a1, a1, *foo, 0);
-	cv::Laplacian(a1, laplaceMat, 8, 1, 10);
-	cv::blur(a1, a1, *largeBlur);
+	cv::Mat targetMat = cv::Mat(target); 
+	cv::Mat laplaceMat = cv::Mat(laplace);
+
+	cv::Laplacian(targetMat, laplaceMat, 8, 1, 10);
+	cv::blur(targetMat, targetMat, *largeBlur); // In place blur
+
 	cv::blur(laplaceMat, laplaceMat, *smallBlur);
+	
+	/*
 	printf("Processing a %dx%d image with %d channels, widthStep is %d\n",
 			height,width,channels, step);
+	/**/
 
+	int laplaceThreshold = 120;
 
 	for(int y=0; y < height; y++) {
 		for(int x=0; x < step; x++) {
-			if(laplaceData[y * step + x] > 120) {
+			if(laplaceData[y * step + x] > laplaceThreshold) {
 				data[y * step + x] = 255;
 			}
-			//data[y * step + x] = data[y * step + x] ^ laplaceData[y * step + x];
 		}
 	}
 
 	return target;
-
 }
 
 
@@ -69,52 +66,144 @@ IplImage * oilFilter(IplImage * source) {
 
 
 
-
-void showHistogram(IplImage * src, const char* windowName) {
+IplImage* DrawHistogram(CvHistogram *hist, float scaleX=1, float scaleY=1)
+{
+	float histMax = 0;
+    cvGetMinMaxHistValue(hist, 0, &histMax, 0, 0);
 	
-	Mat hsv;
-    cvtColor(src, hsv, CV_BGR2HSV);
+	IplImage* imgHist = cvCreateImage(cvSize(256*scaleX, 64*scaleY), 8 ,1);
+    cvZero(imgHist);
 
-    // let's quantize the hue to 30 levels
-    // and the saturation to 32 levels
-    int hbins = 30, sbins = 32;
-    int histSize[] = {hbins, sbins};
-    // hue varies from 0 to 179, see cvtColor
-    float hranges[] = { 0, 180 };
-    // saturation varies from 0 (black-gray-white) to
-    // 255 (pure spectrum color)
-    float sranges[] = { 0, 256 };
-    const float* ranges[] = { hranges, sranges };
-    MatND hist;
-    // we compute the histogram from the 0-th and 1-st channels
-    int channels[] = {0, 1};
+	 for(int i=0;i<255;i++)
+    {
+        float histValue = cvQueryHistValue_1D(hist, i);
+        float nextValue = cvQueryHistValue_1D(hist, i+1);
+ 
+        CvPoint pt1 = cvPoint(i*scaleX, 64*scaleY);
+        CvPoint pt2 = cvPoint(i*scaleX+scaleX, 64*scaleY);
+        CvPoint pt3 = cvPoint(i*scaleX+scaleX, (64-nextValue*64/histMax)*scaleY);
+        CvPoint pt4 = cvPoint(i*scaleX, (64-histValue*64/histMax)*scaleY);
+ 
+        int numPts = 5;
+        CvPoint pts[] = {pt1, pt2, pt3, pt4, pt1};
+ 
+        cvFillConvexPoly(imgHist, pts, numPts, cvScalar(255));
+    }
 
-    calcHist( &hsv, 1, channels, Mat(), // do not use mask
-        hist, 2, histSize, ranges,
-        true, // the histogram is uniform
-        false );
-    double maxVal=0;
-    minMaxLoc(hist, 0, &maxVal, 0, 0);
-
-    int scale = 1;
-   	Mat histImg = Mat::zeros(sbins*scale, hbins*10, CV_32F);//CV_8UC3);
-
-    for( int h = 0; h < hbins; h++ )
-        for( int s = 0; s < sbins; s++ )
-        {
-            float binVal = hist.at<float>(h, s);
-            int intensity = cvRound(binVal*255/maxVal);
-			cv::rectangle( histImg, Point(h*scale, s*scale),
-                         Point( (h+1)*scale - 1, (s+1)*scale - 1),
-                         Scalar::all(intensity),
-                         CV_FILLED );
-        }
-
-	IplImage* foo = &IplImage(histImg);
-    cvShowImage( windowName, foo );
-	
-	
+	return imgHist;
 }
+
+
+
+void showHistogram(IplImage * img, const char* windowName) {
+
+	IplImage* imgRed = cvCreateImage(cvGetSize(img), 8, 1);
+    IplImage* imgGreen = cvCreateImage(cvGetSize(img), 8, 1);
+    IplImage* imgBlue = cvCreateImage(cvGetSize(img), 8, 1);
+ 
+    cvSplit(img, imgBlue, imgGreen, imgRed, NULL);
+
+	cv::Mat rgb(imgRed);
+    
+    int bins = 256;
+    int histSize[] = { bins };
+    
+    float rgbranges[] = { 0,  256 };
+    
+    float* ranges[] = { rgbranges };
+    CvHistogram * hist;
+    
+    int channels[] = {0};
+
+	float min_value, max_value;	
+	
+	//get the histogram and some info about it
+	hist = cvCreateHist( 1, histSize, CV_HIST_ARRAY, ranges, 1);
+	cvCalcHist( &imgRed, hist, 0, NULL);
+	cvGetMinMaxHistValue( hist, &min_value, &max_value);
+	printf("min: %f, max: %f\n", min_value, max_value);
+
+	IplImage * foo = DrawHistogram(hist, 3, 3);
+    cvShowImage( windowName, foo );
+}
+
+
+IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
+	double histMax = 0;
+	 
+	
+	cv::MatND histogram = *histogramPointer;
+	minMaxLoc(histogram, 0, &histMax, 0, 0);
+	
+	int scaleX, scaleY;
+	scaleX = scaleY = scale;
+
+	IplImage* imgHist = cvCreateImage(cvSize(256*scaleX, 64*scaleY), 8 ,1);
+    cvZero(imgHist);
+
+	 for(int i=0;i<255;i++)
+    {
+        float histValue = histogram.at<float>(i);
+        float nextValue = histogram.at<float>(i+1);
+
+        CvPoint pt1 = cvPoint(i*scaleX, 64*scaleY);
+        CvPoint pt2 = cvPoint(i*scaleX+scaleX, 64*scaleY);
+        CvPoint pt3 = cvPoint(i*scaleX+scaleX, (64-nextValue*64/histMax)*scaleY);
+        CvPoint pt4 = cvPoint(i*scaleX, (64-histValue*64/histMax)*scaleY);
+ 
+        int numPts = 5;
+        CvPoint pts[] = {pt1, pt2, pt3, pt4, pt1};
+ 
+        cvFillConvexPoly(imgHist, pts, numPts, cvScalar(127));
+    }
+
+	return imgHist;
+}
+
+void showHistogramAdv(IplImage * img) {
+
+	IplImage* imgRed = cvCreateImage(cvGetSize(img), 8, 1);
+    IplImage* imgGreen = cvCreateImage(cvGetSize(img), 8, 1);
+    IplImage* imgBlue = cvCreateImage(cvGetSize(img), 8, 1);
+ 
+    cvSplit(img, imgBlue, imgGreen, imgRed, NULL);
+
+	cv::Mat red = cv::Mat(imgRed);
+
+	int bins = 256;
+	int images = 1;
+	int channels = 0;
+	int dimensions = 1;
+	int histSize[] = { bins };
+
+	float rgbrange[] = {0, 256};
+	const float * ranges[] = { rgbrange };
+	cv::Mat mask = cv::Mat();
+
+	cv::MatND histogram;
+	
+	cv::calcHist(
+		&red,
+		images,
+		&channels,
+		mask,
+		histogram,
+		dimensions,
+		histSize,
+		ranges
+	);
+
+	double max_value = 0;
+	minMaxLoc(histogram, 0, &max_value, 0, 0);
+	printf("only max: %f\n", max_value);
+
+	
+	IplImage * foo = drawHistogram(&histogram, 3);
+    cvShowImage( "histogram", foo );
+}
+
+
+
 
 
 int main(void) {
@@ -173,8 +262,8 @@ int main(void) {
 		
 
 		img = effect(img, someValue);
-		showHistogram(img, "histogram");
-
+		//showHistogram(img, "histogram");
+		showHistogramAdv(img);
 		cvShowImage("image display", img);
 		
 		cvWaitKey( 1 );
