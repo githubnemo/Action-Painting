@@ -20,6 +20,7 @@ endif
 
 USED_LIBS += cv
 USED_LIBS += highgui
+USED_LIBS += cxcore
 INC_DIRS += /usr/include/opencv
 
 include ../NiteSampleMakefile
