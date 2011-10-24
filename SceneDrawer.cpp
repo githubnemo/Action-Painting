@@ -145,14 +145,22 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 }
 
 
+void initBackgroundImage(int width, int height) {
+	IplImage* img = cvLoadImage("Data/background.jpg");
+
+	int depth = img->depth;
+	int channels = img->nChannels;
+
+	IplImage* resizedImage = cvCreateImage(cv::Size(width,height), depth, channels);
+
+	cvResize(img, resizedImage, CV_INTER_LINEAR);
+
+	g_pBgImg = resizedImage;
+}
+
+
 // Return reference to the cv IplImage of the background image
 IplImage* getBackgroundImage() {
-	if(g_pBgImg == NULL) {
-		IplImage* img = cvLoadImage("Data/background.jpg");
-
-		g_pBgImg = img;
-	}
-
 	return g_pBgImg;
 }
 
@@ -238,6 +246,8 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		texcoords[1] = texYpos,
 		texcoords[2] = texXpos,
 		texcoords[7] = texYpos;
+
+		initBackgroundImage(nXRes, nYRes);
 
 		bInitialized = true;
 	}
