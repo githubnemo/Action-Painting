@@ -1,0 +1,6 @@
+* Get hand tracking working
+	* Drawing on canvas
+	* Nice effect
+* Filter player image (oil filter)
+* Resize player image according to Z-Axis
+* Path limitation (according to polygon or map)
