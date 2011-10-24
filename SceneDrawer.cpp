@@ -255,6 +255,8 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	unsigned char* pDestImage = pDepthTexBuf;
 	const XnLabel* pLabels = smd.Data();
 
+	// User pixels == filter(smd.Data(), fun(*d) { return *d != 0; })
+
 	{
 		// Real world image data
 		const XnUInt8* pImage = imd.Data();
@@ -298,8 +300,8 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 
 
 				pLabels++;
-				pBgImage+=3;
-				pDestImage+=3;
+				pBgImage += 3;
+				pDestImage += 3;
 			}
 
 			pDestImage += (texWidth - nXRes) *3;
