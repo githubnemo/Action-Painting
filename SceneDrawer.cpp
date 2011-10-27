@@ -67,7 +67,6 @@ void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bot
 	glVertexPointer(2, GL_FLOAT, 0, verts);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-	//TODO: Maybe glFinish needed here instead - if there's some bad graphics crap
 	glFlush();
 }
 
@@ -166,9 +165,6 @@ void initBackgroundImage(int width, int height) {
 }
 
 
-
-
-
 void DrawUserLabels(XnUserID player) {
 	char strLabel[20] = "";
 	XnUserID aUsers[15];
@@ -254,6 +250,8 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		initBackgroundImage(nXRes, nYRes);
 
 		bInitialized = true;
+
+		puts("Initialized");
 	}
 
 	unsigned char* pDestImage = pDepthTexBuf;
@@ -366,18 +364,7 @@ void SceneDrawer::Update(XnVMessage* pMessage) {
 	// PointControl's Update calls all callbacks for each hand
 	XnVPointControl::Update(pMessage);
 
-	// Process the data
-	xn::SceneMetaData sceneMD;
-	xn::DepthMetaData depthMD;
-	xn::ImageMetaData imageMD;
-
-	g_DepthGenerator.GetMetaData(depthMD);
-	g_UserGenerator.GetUserPixels(0, sceneMD);
-	g_ImageGenerator.GetMetaData(imageMD);
-
-	DrawDepthMap(depthMD, sceneMD, imageMD, g_nPlayer);
-
-	DrawPoints();
+	DrawHands();
 }
 
 
@@ -414,7 +401,49 @@ void SceneDrawer::OnPointDestroy(XnUInt32 nID)
 }
 
 
-void SceneDrawer::DrawPoints() {
+void SceneDrawer::DrawHands() const {
+	std::map<XnUInt32, std::list<XnPoint3D> >::const_iterator PointIterator;
 
+	// Go over each existing hand
+	for (PointIterator = m_History.begin();
+		PointIterator != m_History.end();
+		++PointIterator)
+	{
+		// Clear buffer
+		XnUInt32 nPoints = 0;
+		XnUInt32 i = 0;
+		XnUInt32 Id = PointIterator->first;
+
+		// Go over all previous positions of current hand
+		std::list<XnPoint3D>::const_iterator PositionIterator;
+		for (PositionIterator = PointIterator->second.begin();
+			PositionIterator != PointIterator->second.end();
+			++PositionIterator, ++i)
+		{
+			// Add position to buffer
+			XnPoint3D pt(*PositionIterator);
+			m_pfPositionBuffer[3*i] = pt.X;
+			m_pfPositionBuffer[3*i + 1] = pt.Y;
+			m_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
+		}
+
+		// Set color
+		XnUInt32 nColor = Id % nColors;
+		XnUInt32 nSingle = GetPrimaryID();
+		if (Id == GetPrimaryID())
+			nColor = 6;
+		// Draw buffer:
+		glColor4f(Colors[nColor][0],
+				Colors[nColor][1],
+				Colors[nColor][2],
+				1.0f);
+		glPointSize(2);
+		glVertexPointer(3, GL_FLOAT, 0, m_pfPositionBuffer);
+		glDrawArrays(GL_LINE_STRIP, 0, i);
+
+
+		glPointSize(8);
+		glDrawArrays(GL_POINTS, 0, 1);
+		glFlush();
+	}
 }
-

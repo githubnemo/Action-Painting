@@ -21,6 +21,7 @@ xn::DepthGenerator g_DepthGenerator;
 xn::ImageGenerator g_ImageGenerator;
 xn::UserGenerator g_UserGenerator;
 xn::HandsGenerator g_HandsGenerator;
+xn::GestureGenerator g_GestureGenerator;
 xn::Recorder* g_pRecorder;
 
 // NITE specifics
@@ -208,8 +209,21 @@ void glutDisplay (void)
 	if (!g_bPause)
 	{
 		// Read next available data
-		//g_Context.WaitOneUpdateAll(g_DepthGenerator);
-		g_Context.WaitAnyUpdateAll();
+		g_Context.WaitOneUpdateAll(g_DepthGenerator);
+		//g_Context.WaitAnyUpdateAll();
+
+		{
+			xn::SceneMetaData sceneMD;
+			xn::DepthMetaData depthMD;
+			xn::ImageMetaData imageMD;
+
+			g_DepthGenerator.GetMetaData(depthMD);
+			g_UserGenerator.GetUserPixels(0, sceneMD);
+			g_ImageGenerator.GetMetaData(imageMD);
+
+			DrawDepthMap(depthMD, sceneMD, imageMD, g_nPlayer);
+		}
+
 		g_pSessionManager->Update(&g_Context);
 	}
 
@@ -290,6 +304,21 @@ void glInit (int * pargc, char ** argv)
 	return (rc);						\
 }
 
+// Debug output callbacks for hand generator
+
+void XN_CALLBACK_TYPE GestureIntermediateStageCompletedHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
+{
+	printf("Gesture %s: Intermediate stage complete (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
+}
+void XN_CALLBACK_TYPE GestureReadyForNextIntermediateStageHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
+{
+	printf("Gesture %s: Ready for next intermediate stage (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
+}
+void XN_CALLBACK_TYPE GestureProgressHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, XnFloat fProgress, void* pCookie)
+{
+	printf("Gesture %s progress: %f (%f,%f,%f)\n", strGesture, fProgress, pPosition->X, pPosition->Y, pPosition->Z);
+}
+
 
 int main(int argc, char **argv)
 {
@@ -308,6 +337,9 @@ int main(int argc, char **argv)
 	CHECK_RC(rc, "Find image generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_HANDS, g_HandsGenerator);
 	CHECK_RC(rc, "Find hands generator");
+	rc = g_Context.FindExistingNode(XN_NODE_TYPE_GESTURE, g_GestureGenerator);
+	CHECK_RC(rc, "Find gesture generator");
+
 
 	if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_SKELETON) ||
 		!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_POSE_DETECTION))
@@ -323,22 +355,12 @@ int main(int argc, char **argv)
 	XnStatus s = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
 
 
-	// Setup hand tracking mechanism and drawing class
-	g_pSessionManager = new XnVSessionManager;
-	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
-	CHECK_RC(rc, "SessionManager::Initialize");
+	// Debug callbacks
+	XnCallbackHandle hGestureIntermediateStageCompleted, hGestureProgress, hGestureReadyForNextIntermediateStage;
+	g_GestureGenerator.RegisterToGestureIntermediateStageCompleted(GestureIntermediateStageCompletedHandler, NULL, hGestureIntermediateStageCompleted);
+	g_GestureGenerator.RegisterToGestureReadyForNextIntermediateStage(GestureReadyForNextIntermediateStageHandler, NULL, hGestureReadyForNextIntermediateStage);
+	g_GestureGenerator.RegisterGestureCallbacks(NULL, GestureProgressHandler, NULL, hGestureProgress);
 
-	SceneDrawer* sceneDrawer = new SceneDrawer(10);
-
-	g_pFlowRouter = new XnVFlowRouter;
-	g_pFlowRouter->SetActive(sceneDrawer);
-
-	g_pSessionManager->AddListener(g_pFlowRouter);
-
-
-	// Fire up all generators
-	rc = g_Context.StartGeneratingAll();
-	CHECK_RC(rc, "StartGenerating");
 
 	XnCallbackHandle hUserCBs, hCalibrationStartCB, hCalibrationCompleteCB, hPoseCBs;
 
@@ -359,33 +381,28 @@ int main(int argc, char **argv)
 	CHECK_RC(rc, "Register to pose detected");
 
 
-	#ifdef USE_GLUT
+	// Give me more points, hand generator!
+	g_HandsGenerator.SetSmoothing(0.1);
+
+
+	// Setup hand tracking mechanism and drawing class
+	g_pSessionManager = new XnVSessionManager;
+	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
+	CHECK_RC(rc, "SessionManager::Initialize");
+
+	SceneDrawer* sceneDrawer = new SceneDrawer(10);
+
+	g_pFlowRouter = new XnVFlowRouter;
+	g_pFlowRouter->SetActive(sceneDrawer);
+
+	g_pSessionManager->AddListener(g_pFlowRouter);
+
+
+	// Fire up all generators
+	rc = g_Context.StartGeneratingAll();
+	CHECK_RC(rc, "StartGenerating");
+
 
 	glInit(&argc, argv);
 	glutMainLoop();
-
-	#else
-
-	if (!opengles_init(GL_WIN_SIZE_X, GL_WIN_SIZE_Y, &display, &surface, &context))
-	{
-		printf("Error initing opengles\n");
-		CleanupExit();
-	}
-
-	glDisable(GL_DEPTH_TEST);
-//	glEnable(GL_TEXTURE_2D);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
-
-	while ((!_kbhit()) && (!g_bQuit))
-	{
-		glutDisplay();
-		eglSwapBuffers(display, surface);
-	}
-
-	opengles_shutdown(display, surface, context);
-
-	CleanupExit();
-
-	#endif
 }
