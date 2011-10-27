@@ -26,6 +26,7 @@ extern xn::ImageGenerator g_ImageGenerator;
 extern XnUserID g_nPlayer;
 
 IplImage* g_pBgImg;
+GLfloat g_pfTexCoords[8];
 
 
 unsigned int getClosestPowerOfTwo(unsigned int n)
@@ -37,6 +38,11 @@ unsigned int getClosestPowerOfTwo(unsigned int n)
 }
 
 
+/**
+ * Initialize texture for DrawDepthMap.
+ *
+ * RGBA texture with getClosestPowerOfTwo(width) x getClosestPowerOfTwo(height).
+ */
 GLuint initTexture(void** buf, int& width, int& height)
 {
 	GLuint texID = 0;
@@ -54,7 +60,7 @@ GLuint initTexture(void** buf, int& width, int& height)
 }
 
 
-GLfloat texcoords[8];
+
 void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
 	GLfloat verts[8] = {
@@ -74,7 +80,7 @@ void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bot
 void DrawTexture(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
+	glTexCoordPointer(2, GL_FLOAT, 0, g_pfTexCoords);
 
 	DrawRectangle(topLeftX, topLeftY, bottomRightX, bottomRightY);
 
@@ -241,11 +247,11 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		texXpos =(float)nXRes/texWidth;
 		texYpos  =(float)nYRes/texHeight;
 
-		memset(texcoords, 0, 8*sizeof(float));
-		texcoords[0] = texXpos,
-		texcoords[1] = texYpos,
-		texcoords[2] = texXpos,
-		texcoords[7] = texYpos;
+		memset(g_pfTexCoords, 0, 8*sizeof(float));
+		g_pfTexCoords[0] = texXpos,
+		g_pfTexCoords[1] = texYpos,
+		g_pfTexCoords[2] = texXpos,
+		g_pfTexCoords[7] = texYpos;
 
 		initBackgroundImage(nXRes, nYRes);
 

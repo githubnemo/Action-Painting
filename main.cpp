@@ -147,7 +147,8 @@ void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void
 }
 
 
-void XN_CALLBACK_TYPE PoseDetected(xn::PoseDetectionCapability& pose, const XnChar* strPose, XnUserID user, void* cxt)
+void XN_CALLBACK_TYPE PoseDetected(xn::PoseDetectionCapability& pose,
+		const XnChar* strPose, XnUserID user, void* cxt)
 {
 	printf("Found pose \"%s\" for user %d\n", strPose, user);
 	g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
@@ -155,13 +156,15 @@ void XN_CALLBACK_TYPE PoseDetected(xn::PoseDetectionCapability& pose, const XnCh
 }
 
 
-void XN_CALLBACK_TYPE CalibrationStarted(xn::SkeletonCapability& skeleton, XnUserID user, void* cxt)
+void XN_CALLBACK_TYPE CalibrationStarted(xn::SkeletonCapability& skeleton,
+		XnUserID user, void* cxt)
 {
 	printf("Calibration started\n");
 }
 
 
-void XN_CALLBACK_TYPE CalibrationEnded(xn::SkeletonCapability& skeleton, XnUserID user, XnBool bSuccess, void* cxt)
+void XN_CALLBACK_TYPE CalibrationEnded(xn::SkeletonCapability& skeleton,
+		XnUserID user, XnBool bSuccess, void* cxt)
 {
 	printf("Calibration done [%d] %ssuccessfully\n", user, bSuccess?"":"un");
 	if (bSuccess)
@@ -183,9 +186,12 @@ void XN_CALLBACK_TYPE CalibrationEnded(xn::SkeletonCapability& skeleton, XnUserI
 }
 
 
-void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton, XnUserID user, XnCalibrationStatus eStatus, void* cxt)
+void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton,
+		XnUserID user, XnCalibrationStatus eStatus, void* cxt)
 {
-	printf("Calibration done [%d] %ssuccessfully\n", user, (eStatus == XN_CALIBRATION_STATUS_OK)?"":"un");
+	printf("Calibration done [%d] %ssuccessfully\n",
+			user, (eStatus == XN_CALIBRATION_STATUS_OK)?"":"un");
+
 	if (eStatus == XN_CALIBRATION_STATUS_OK)
 	{
 		if (!g_bCalibrated)
@@ -303,7 +309,6 @@ void glInit (int * pargc, char ** argv)
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
 	glutCreateWindow ("PrimeSense Nite Players Viewer");
-	//glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_NONE);
 
 	glutKeyboardFunc(glutKeyboard);
@@ -321,17 +326,28 @@ void glInit (int * pargc, char ** argv)
 
 // Debug output callbacks for hand generator
 
-void XN_CALLBACK_TYPE GestureIntermediateStageCompletedHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
+void XN_CALLBACK_TYPE GestureIntermediateStageCompletedHandler(
+		xn::GestureGenerator& generator, const XnChar* strGesture,
+		const XnPoint3D* pPosition, void* pCookie)
 {
-	printf("Gesture %s: Intermediate stage complete (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
+	printf("Gesture %s: Intermediate stage complete (%f,%f,%f)\n",
+			strGesture, pPosition->X, pPosition->Y, pPosition->Z);
 }
-void XN_CALLBACK_TYPE GestureReadyForNextIntermediateStageHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
+
+void XN_CALLBACK_TYPE GestureReadyForNextIntermediateStageHandler(
+		xn::GestureGenerator& generator, const XnChar* strGesture,
+		const XnPoint3D* pPosition, void* pCookie)
 {
-	printf("Gesture %s: Ready for next intermediate stage (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
+	printf("Gesture %s: Ready for next intermediate stage (%f,%f,%f)\n",
+			strGesture, pPosition->X, pPosition->Y, pPosition->Z);
 }
-void XN_CALLBACK_TYPE GestureProgressHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, XnFloat fProgress, void* pCookie)
+
+void XN_CALLBACK_TYPE GestureProgressHandler(
+		xn::GestureGenerator& generator, const XnChar* strGesture,
+		const XnPoint3D* pPosition, XnFloat fProgress, void* pCookie)
 {
-	printf("Gesture %s progress: %f (%f,%f,%f)\n", strGesture, fProgress, pPosition->X, pPosition->Y, pPosition->Z);
+	printf("Gesture %s progress: %f (%f,%f,%f)\n",
+			strGesture, fProgress, pPosition->X, pPosition->Y, pPosition->Z);
 }
 
 
@@ -370,16 +386,26 @@ int main(int argc, char **argv)
 	XnStatus s = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
 
 
-	// Debug callbacks
-	XnCallbackHandle hGestureIntermediateStageCompleted, hGestureProgress, hGestureReadyForNextIntermediateStage;
-	g_GestureGenerator.RegisterToGestureIntermediateStageCompleted(GestureIntermediateStageCompletedHandler, NULL, hGestureIntermediateStageCompleted);
-	g_GestureGenerator.RegisterToGestureReadyForNextIntermediateStage(GestureReadyForNextIntermediateStageHandler, NULL, hGestureReadyForNextIntermediateStage);
-	g_GestureGenerator.RegisterGestureCallbacks(NULL, GestureProgressHandler, NULL, hGestureProgress);
+	// Debug callbacks for gesture recognition
+	XnCallbackHandle hGestureIntermediateStageCompleted, hGestureProgress,
+					 hGestureReadyForNextIntermediateStage;
+
+	g_GestureGenerator.RegisterToGestureIntermediateStageCompleted(
+			GestureIntermediateStageCompletedHandler, NULL,
+			hGestureIntermediateStageCompleted);
+
+	g_GestureGenerator.RegisterToGestureReadyForNextIntermediateStage(
+			GestureReadyForNextIntermediateStageHandler, NULL,
+			hGestureReadyForNextIntermediateStage);
+
+	g_GestureGenerator.RegisterGestureCallbacks(
+			NULL, GestureProgressHandler, NULL, hGestureProgress);
 
 
-	XnCallbackHandle hUserCBs, hCalibrationStartCB, hCalibrationCompleteCB, hPoseCBs;
 
 	// User callbacks
+	XnCallbackHandle hUserCBs, hCalibrationStartCB, hCalibrationCompleteCB, hPoseCBs;
+
 	g_UserGenerator.RegisterUserCallbacks(NewUser, LostUser, NULL, hUserCBs);
 
 	// Skeleton callbacks
@@ -405,7 +431,7 @@ int main(int argc, char **argv)
 	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
 	CHECK_RC(rc, "SessionManager::Initialize");
 
-	SceneDrawer* sceneDrawer = new SceneDrawer(10);
+	SceneDrawer* sceneDrawer = new SceneDrawer(20);
 
 	g_pFlowRouter = new XnVFlowRouter;
 	g_pFlowRouter->SetActive(sceneDrawer);
