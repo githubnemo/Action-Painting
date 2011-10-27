@@ -23,5 +23,7 @@
 				<Mirror on="true"/>
 			</Configuration>
 		</Node>
+		<Node type="Gesture" />
+		<Node type="Hands" />
 	</ProductionNodes>
 </OpenNI>
