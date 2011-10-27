@@ -25,3 +25,5 @@ INC_DIRS += /usr/include/opencv
 
 include ../NiteSampleMakefile
 
+run: $(OUTPUT_FILE)
+	cd $(shell dirname $(OUTPUT_FILE)) && ./$(shell basename $<)
