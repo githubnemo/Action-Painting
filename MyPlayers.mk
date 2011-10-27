@@ -3,7 +3,6 @@ OSTYPE := $(shell uname -s)
 SRC_FILES = \
 	main.cpp \
 	SceneDrawer.cpp \
-	kbhit.cpp \
 	signal_catch.cpp
 
 INC_DIRS += ../../../../../Samples/MyPlayers
