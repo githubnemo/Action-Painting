@@ -36,9 +36,6 @@ XnBool g_bCalibrated = FALSE;
 #else
         #include <GL/glut.h>
 #endif
-#else
-//#include "opengles.h"
-#include "kbhit.h"
 #endif
 
 #ifndef USE_GLUT
@@ -200,13 +197,11 @@ void glutDisplay (void)
 	glPushMatrix();
 	glLoadIdentity();
 
-	xn::DepthMetaData depthMD;
-	g_DepthGenerator.GetMetaData(depthMD);
-	#ifdef USE_GLUT
-	glOrtho(0, depthMD.XRes(), depthMD.YRes(), 0, -1.0, 1.0);
-	#else
-	glOrthof(0, depthMD.XRes(), depthMD.YRes(), 0, -1.0, 1.0);
-	#endif
+
+	XnMapOutputMode mode;
+	g_DepthGenerator.GetMapOutputMode(mode);
+	glOrtho(0, mode.nXRes, mode.nYRes, 0, -1.0, 1.0);
+
 
 	glDisable(GL_TEXTURE_2D);
 
