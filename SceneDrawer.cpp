@@ -23,6 +23,7 @@
 extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
+extern XnUserID g_nPlayer;
 
 #define MAX_DEPTH 10000
 
@@ -145,6 +146,14 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 }
 
 
+
+
+// Return reference to the cv IplImage of the background image
+IplImage* getBackgroundImage() {
+	return g_pBgImg;
+}
+
+
 void initBackgroundImage(int width, int height) {
 	IplImage* img = cvLoadImage("Data/background.jpg");
 
@@ -159,10 +168,7 @@ void initBackgroundImage(int width, int height) {
 }
 
 
-// Return reference to the cv IplImage of the background image
-IplImage* getBackgroundImage() {
-	return g_pBgImg;
-}
+
 
 
 void DrawUserLabels(XnUserID player) {
@@ -328,3 +334,89 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		DrawPlayerSkeleton(player);
 	}
 }
+
+
+
+/* SceneDrawer definitions
+ *
+ * The scene drawer's Update method is called each frame.
+ * The rendering process is started from there.
+ */
+
+SceneDrawer::SceneDrawer(XnUInt32 nHistory) :
+	m_nHistorySize(nHistory)
+{
+	m_pfPositionBuffer = new XnFloat[nHistory*3];
+}
+
+
+// Destructor. Clear all data structures
+SceneDrawer::~SceneDrawer()
+{
+	std::map<XnUInt32, std::list<XnPoint3D> >::iterator iter;
+	for (iter = m_History.begin(); iter != m_History.end(); ++iter)
+	{
+		iter->second.clear();
+	}
+	m_History.clear();
+
+	delete []m_pfPositionBuffer;
+}
+
+
+void SceneDrawer::Update(XnVMessage* pMessage) {
+	// PointControl's Update calls all callbacks for each hand
+	XnVPointControl::Update(pMessage);
+
+	// Process the data
+	xn::SceneMetaData sceneMD;
+	xn::DepthMetaData depthMD;
+	xn::ImageMetaData imageMD;
+
+	g_DepthGenerator.GetMetaData(depthMD);
+	g_UserGenerator.GetUserPixels(0, sceneMD);
+	g_ImageGenerator.GetMetaData(imageMD);
+
+	DrawDepthMap(depthMD, sceneMD, imageMD, g_nPlayer);
+
+	DrawPoints();
+}
+
+
+void SceneDrawer::OnPointCreate(const XnVHandPointContext* cxt)
+{
+	// Create entry for the hand
+	m_History[cxt->nID].clear();
+	OnPointUpdate(cxt);
+}
+
+
+// Handle new position of an existing hand
+void SceneDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
+{
+	// positions are kept in projective coordinates, since they are only used for drawing
+	XnPoint3D ptProjective(cxt->ptPosition);
+
+	g_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
+
+	// Add new position to the history buffer
+	m_History[cxt->nID].push_front(ptProjective);
+
+	// Keep size of history buffer
+	if (m_History[cxt->nID].size() > m_nHistorySize)
+		m_History[cxt->nID].pop_back();
+}
+
+
+// Handle destruction of an existing hand
+void SceneDrawer::OnPointDestroy(XnUInt32 nID)
+{
+	// No need for the history buffer
+	m_History.erase(nID);
+}
+
+
+void SceneDrawer::DrawPoints() {
+
+}
+

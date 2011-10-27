@@ -10,12 +10,22 @@
 #include <XnCppWrapper.h>
 #include "SceneDrawer.h"
 
+
+#include <XnVNite.h>
+#include <XnVPointControl.h>
+#include <XnVHandPointContext.h>
+
 xn::Context g_Context;
 xn::ScriptNode g_ScriptNode;
 xn::DepthGenerator g_DepthGenerator;
 xn::ImageGenerator g_ImageGenerator;
 xn::UserGenerator g_UserGenerator;
+xn::HandsGenerator g_HandsGenerator;
 xn::Recorder* g_pRecorder;
+
+// NITE specifics
+XnVSessionManager* g_pSessionManager;
+XnVFlowRouter* g_pFlowRouter;
 
 XnUserID g_nPlayer = 0;
 XnBool g_bCalibrated = FALSE;
@@ -198,10 +208,7 @@ void glutDisplay (void)
 	glPushMatrix();
 	glLoadIdentity();
 
-	xn::SceneMetaData sceneMD;
 	xn::DepthMetaData depthMD;
-	xn::ImageMetaData imageMD;
-
 	g_DepthGenerator.GetMetaData(depthMD);
 	#ifdef USE_GLUT
 	glOrtho(0, depthMD.XRes(), depthMD.YRes(), 0, -1.0, 1.0);
@@ -216,26 +223,19 @@ void glutDisplay (void)
 		// Read next available data
 		//g_Context.WaitOneUpdateAll(g_DepthGenerator);
 		g_Context.WaitAnyUpdateAll();
+		g_pSessionManager->Update(&g_Context);
 	}
 
-		// Process the data
-		//DRAW
-		g_DepthGenerator.GetMetaData(depthMD);
-		g_UserGenerator.GetUserPixels(0, sceneMD);
-		g_ImageGenerator.GetMetaData(imageMD);
-
-		DrawDepthMap(depthMD, sceneMD, imageMD, g_nPlayer);
-
-		if (g_nPlayer != 0)
+	if (g_nPlayer != 0)
+	{
+		XnPoint3D com;
+		g_UserGenerator.GetCoM(g_nPlayer, com);
+		if (com.Z == 0)
 		{
-			XnPoint3D com;
-			g_UserGenerator.GetCoM(g_nPlayer, com);
-			if (com.Z == 0)
-			{
-				g_nPlayer = 0;
-				FindPlayer();
-			}
+			g_nPlayer = 0;
+			FindPlayer();
 		}
+	}
 
 	#ifdef USE_GLUT
 	glutSwapBuffers();
@@ -319,6 +319,8 @@ int main(int argc, char **argv)
 	CHECK_RC(rc, "Find user generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_IMAGE, g_ImageGenerator);
 	CHECK_RC(rc, "Find image generator");
+	rc = g_Context.FindExistingNode(XN_NODE_TYPE_HANDS, g_HandsGenerator);
+	CHECK_RC(rc, "Find hands generator");
 
 	if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_SKELETON) ||
 		!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_POSE_DETECTION))
@@ -328,18 +330,45 @@ int main(int argc, char **argv)
 	}
 
 	g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
+
+	// Orientate the depth screen at the real world image so there's
+	// no offset if we project the user's image to the depth map.
 	XnStatus s = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
 
+
+	// Setup hand tracking mechanism and drawing class
+	g_pSessionManager = new XnVSessionManager;
+	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
+	CHECK_RC(rc, "SessionManager::Initialize");
+
+	SceneDrawer* sceneDrawer = new SceneDrawer(10);
+
+	g_pFlowRouter = new XnVFlowRouter;
+	g_pFlowRouter->SetActive(sceneDrawer);
+
+	g_pSessionManager->AddListener(g_pFlowRouter);
+
+
+	// Fire up all generators
 	rc = g_Context.StartGeneratingAll();
 	CHECK_RC(rc, "StartGenerating");
 
 	XnCallbackHandle hUserCBs, hCalibrationStartCB, hCalibrationCompleteCB, hPoseCBs;
+
+	// User callbacks
 	g_UserGenerator.RegisterUserCallbacks(NewUser, LostUser, NULL, hUserCBs);
-	rc = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationStart(CalibrationStarted, NULL, hCalibrationStartCB);
+
+	// Skeleton callbacks
+	rc = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationStart(
+			CalibrationStarted, NULL, hCalibrationStartCB);
 	CHECK_RC(rc, "Register to calbiration start");
-	rc = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationComplete(CalibrationCompleted, NULL, hCalibrationCompleteCB);
+
+	rc = g_UserGenerator.GetSkeletonCap().RegisterToCalibrationComplete(
+			CalibrationCompleted, NULL, hCalibrationCompleteCB);
 	CHECK_RC(rc, "Register to calibration complete");
-	rc = g_UserGenerator.GetPoseDetectionCap().RegisterToPoseDetected(PoseDetected, NULL, hPoseCBs);
+
+	rc = g_UserGenerator.GetPoseDetectionCap().RegisterToPoseDetected(
+			PoseDetected, NULL, hPoseCBs);
 	CHECK_RC(rc, "Register to pose detected");
 
 
