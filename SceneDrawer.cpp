@@ -24,8 +24,6 @@ extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
 
-#define MAX_DEPTH 10000
-
 IplImage* g_pBgImg;
 
 
