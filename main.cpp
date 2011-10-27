@@ -187,24 +187,6 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton, XnU
 }
 
 
-void DrawProjectivePoints(XnPoint3D& ptIn, int width, double r, double g, double b)
-{
-	static XnFloat pt[3];
-
-	pt[0] = ptIn.X;
-	pt[1] = ptIn.Y;
-	pt[2] = 0;
-	glColor4f(r,
-		g,
-		b,
-		1.0f);
-	glPointSize(width);
-	glVertexPointer(3, GL_FLOAT, 0, pt);
-	glDrawArrays(GL_POINTS, 0, 1);
-
-	glFlush();
-
-}
 // this function is called each frame
 void glutDisplay (void)
 {
