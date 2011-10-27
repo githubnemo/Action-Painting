@@ -54,6 +54,24 @@ XnBool g_bRecord = false;
 XnBool g_bQuit = false;
 
 
+#define SAMPLE_XML_PATH "./Data/Sample-Players.xml"
+
+#define CHECK_RC(rc, what)											\
+	if (rc != XN_STATUS_OK)											\
+	{																\
+		printf("%s failed: %s\n", what, xnGetStatusString(rc));		\
+		return rc;													\
+	}
+
+#define CHECK_ERRORS(rc, errors, what)		\
+	if (rc == XN_STATUS_NO_NODE_PRESENT)	\
+{										\
+	XnChar strError[1024];				\
+	errors.ToString(strError, 1024);	\
+	printf("%s\n", strError);			\
+	return (rc);						\
+}
+
 
 void CleanupExit()
 {
@@ -210,7 +228,6 @@ void glutDisplay (void)
 	{
 		// Read next available data
 		g_Context.WaitOneUpdateAll(g_DepthGenerator);
-		//g_Context.WaitAnyUpdateAll();
 
 		{
 			xn::SceneMetaData sceneMD;
@@ -243,6 +260,7 @@ void glutDisplay (void)
 	#endif
 }
 
+
 #ifdef USE_GLUT
 void glutIdle (void)
 {
@@ -254,17 +272,31 @@ void glutIdle (void)
 	glutPostRedisplay();
 }
 
+
 void glutKeyboard (unsigned char key, int x, int y)
 {
+	static short fullscreen = 0;
+
 	switch (key)
 	{
 	case 27:
 		CleanupExit();
+	case 'f':
+		if(fullscreen) {
+			glutReshapeWindow(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
+			fullscreen = 0;
+		} else {
+			glutFullScreen();
+			fullscreen = 1;
+		}
+		break;
 	case'p':
 		g_bPause = !g_bPause;
 		break;
 	}
 }
+
+
 void glInit (int * pargc, char ** argv)
 {
 	glutInit(pargc, argv);
@@ -286,23 +318,6 @@ void glInit (int * pargc, char ** argv)
 }
 #endif
 
-#define SAMPLE_XML_PATH "./Data/Sample-Players.xml"
-
-#define CHECK_RC(rc, what)											\
-	if (rc != XN_STATUS_OK)											\
-	{																\
-		printf("%s failed: %s\n", what, xnGetStatusString(rc));		\
-		return rc;													\
-	}
-
-#define CHECK_ERRORS(rc, errors, what)		\
-	if (rc == XN_STATUS_NO_NODE_PRESENT)	\
-{										\
-	XnChar strError[1024];				\
-	errors.ToString(strError, 1024);	\
-	printf("%s\n", strError);			\
-	return (rc);						\
-}
 
 // Debug output callbacks for hand generator
 
