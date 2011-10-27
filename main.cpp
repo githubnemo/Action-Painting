@@ -40,7 +40,6 @@ XnBool g_bCalibrated = FALSE;
 //#include "opengles.h"
 #include "kbhit.h"
 #endif
-//#include "signal_catch.h"
 
 #ifndef USE_GLUT
 static EGLDisplay display = EGL_NO_DISPLAY;
@@ -93,13 +92,6 @@ void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void*
 	}
 
 	AssignPlayer(user);
-// 	if (g_nPlayer == 0)
-// 	{
-// 		printf("Assigned user\n");
-// 		g_UserGenerator.GetSkeletonCap().LoadCalibrationData(user, 0);
-// 		g_UserGenerator.GetSkeletonCap().StartTracking(user);
-// 		g_nPlayer = user;
-// 	}
 }
 
 

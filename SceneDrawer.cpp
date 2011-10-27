@@ -25,8 +25,6 @@ extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
 extern XnUserID g_nPlayer;
 
-#define MAX_DEPTH 10000
-
 IplImage* g_pBgImg;
 
 
