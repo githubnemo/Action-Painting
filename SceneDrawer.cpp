@@ -29,6 +29,18 @@ IplImage* g_pBgImg;
 GLfloat g_pfTexCoords[8];
 
 
+struct TextureData {
+	unsigned char*	data;
+	int 			width;
+	int 			height;
+	float			Xpos;
+	float			Ypos;
+	GLuint			id;
+};
+
+typedef struct TextureData TextureData;
+
+
 unsigned int getClosestPowerOfTwo(unsigned int n)
 {
 	unsigned int m = 2;
@@ -43,20 +55,25 @@ unsigned int getClosestPowerOfTwo(unsigned int n)
  *
  * RGBA texture with getClosestPowerOfTwo(width) x getClosestPowerOfTwo(height).
  */
-GLuint initTexture(void** buf, int& width, int& height)
+void initTexture(TextureData* pTexData, int nXRes, int nYRes)
 {
 	GLuint texID = 0;
 	glGenTextures(1,&texID);
 
-	width = getClosestPowerOfTwo(width);
-	height = getClosestPowerOfTwo(height);
-	*buf = new unsigned char[width*height*4];
+	pTexData->width = getClosestPowerOfTwo(nXRes);
+	pTexData->height = getClosestPowerOfTwo(nYRes);
+
+	pTexData->data = new unsigned char[pTexData->width * pTexData->height * 4];
+
+	pTexData->Xpos =(float)nXRes/pTexData->width;
+	pTexData->Ypos =(float)nYRes/pTexData->height;
+
 	glBindTexture(GL_TEXTURE_2D,texID);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	return texID;
+	pTexData->id = texID;
 }
 
 
@@ -222,36 +239,36 @@ void DrawPlayerSkeleton(XnUserID player) {
 }
 
 
+
+
+void DrawPlayer() {
+	static bool pInitialized = false;
+
+	if(!pInitialized) {
+
+	}
+}
+
+
 void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		const xn::ImageMetaData& imd, XnUserID player)
 {
 	static bool bInitialized = false;
-	static GLuint depthTexID;
-	static unsigned char* pDepthTexBuf;
-	static int texWidth, texHeight;
-
-	float texXpos;
-	float texYpos;
+	static TextureData depthMapTextureData;
 
 	XnUInt16 nXRes = dmd.XRes();
 	XnUInt16 nYRes = dmd.YRes();
 
 	if(!bInitialized)
 	{
-		texWidth =  getClosestPowerOfTwo(nXRes);
-		texHeight = getClosestPowerOfTwo(nYRes);
-
 		// Initialize pDepthTexBuf char*texWidth*texHeight*4
-		depthTexID = initTexture((void**)&pDepthTexBuf, texWidth, texHeight) ;
-
-		texXpos =(float)nXRes/texWidth;
-		texYpos  =(float)nYRes/texHeight;
+		initTexture(&depthMapTextureData, nXRes, nYRes) ;
 
 		memset(g_pfTexCoords, 0, 8*sizeof(float));
-		g_pfTexCoords[0] = texXpos,
-		g_pfTexCoords[1] = texYpos,
-		g_pfTexCoords[2] = texXpos,
-		g_pfTexCoords[7] = texYpos;
+		g_pfTexCoords[0] = depthMapTextureData.Xpos,
+		g_pfTexCoords[1] = depthMapTextureData.Ypos,
+		g_pfTexCoords[2] = depthMapTextureData.Xpos,
+		g_pfTexCoords[7] = depthMapTextureData.Ypos;
 
 		initBackgroundImage(nXRes, nYRes);
 
@@ -260,10 +277,23 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		puts("Initialized");
 	}
 
+
+	unsigned char* pDepthTexBuf = depthMapTextureData.data;
+	GLuint depthTexID = depthMapTextureData.id;
+
+	int texWidth = depthMapTextureData.width;
+	int texHeight = depthMapTextureData.height;
+
+	float texXpos = depthMapTextureData.Xpos;
+	float texYpos = depthMapTextureData.Ypos;
+
+
 	unsigned char* pDestImage = pDepthTexBuf;
 	const XnLabel* pLabels = smd.Data();
 
 	// User pixels == filter(smd.Data(), fun(*d) { return *d != 0; })
+
+	// TODO overlay player with a new texture
 
 	{
 		// Real world image data
