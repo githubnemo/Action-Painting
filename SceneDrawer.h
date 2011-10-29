@@ -14,7 +14,7 @@
 #include <XnCppWrapper.h>
 #include <XnVPointControl.h>
 
-void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
+void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	const xn::ImageMetaData& imd, XnUserID player);
 
 class SceneDrawer : public XnVPointControl {

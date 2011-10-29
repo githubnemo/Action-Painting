@@ -244,7 +244,7 @@ void glutDisplay (void)
 			g_UserGenerator.GetUserPixels(0, sceneMD);
 			g_ImageGenerator.GetMetaData(imageMD);
 
-			DrawDepthMap(depthMD, sceneMD, imageMD, g_nPlayer);
+			DrawScene(depthMD, sceneMD, imageMD, g_nPlayer);
 		}
 
 		g_pSessionManager->Update(&g_Context);

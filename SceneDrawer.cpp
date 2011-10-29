@@ -33,8 +33,10 @@ struct TextureData {
 	unsigned char*	data;
 	int 			width;
 	int 			height;
-	float			Xpos;
-	float			Ypos;
+	float			XPos;
+	float			YPos;
+	int				XRes;
+	int				YRes;
 	GLuint			id;
 };
 
@@ -65,8 +67,10 @@ void initTexture(TextureData* pTexData, int nXRes, int nYRes)
 
 	pTexData->data = new unsigned char[pTexData->width * pTexData->height * 4];
 
-	pTexData->Xpos =(float)nXRes/pTexData->width;
-	pTexData->Ypos =(float)nYRes/pTexData->height;
+	pTexData->XPos =(float)nXRes/pTexData->width;
+	pTexData->YPos =(float)nYRes/pTexData->height;
+	pTexData->XRes = nXRes;
+	pTexData->YRes = nYRes;
 
 	glBindTexture(GL_TEXTURE_2D,texID);
 
@@ -241,68 +245,114 @@ void DrawPlayerSkeleton(XnUserID player) {
 
 
 
-void DrawPlayer() {
-	static bool pInitialized = false;
+inline void DrawBackground(TextureData& sceneTextureData)
+{
+	static bool bInitialized = false;
+	int nXRes = sceneTextureData.XRes;
+	int nYRes = sceneTextureData.YRes;
 
-	if(!pInitialized) {
+	if(!bInitialized) {
+		initBackgroundImage(nXRes, nYRes);
+	}
 
+	// Background image data
+	IplImage* pCvBgImage = getBackgroundImage();
+	const XnUInt8* pBgImage = (const XnUInt8*)pCvBgImage->imageData;
+
+	unsigned char* pDestImage = sceneTextureData.data;
+
+	// Prepare the texture map
+	for (unsigned int nY=0; nY < nYRes; nY++)
+	{
+#if 1
+		for (unsigned int nX=0; nX < nXRes; nX++)
+		{
+			// Draw background image
+			XnUInt8 r,g,b;
+
+			if(nY > pCvBgImage->height || nX > pCvBgImage->width) {
+				r = 0; g = 0; b = 0;
+			} else {
+				r = pBgImage[2];
+				g = pBgImage[1];
+				b = pBgImage[0];
+			}
+
+			pDestImage[0] = r;
+			pDestImage[1] = g;
+			pDestImage[2] = b;
+
+			pBgImage += 3;
+			pDestImage += 3;
+		}
+#else
+		// TODO optimize, use memcpy or something, could be done by setting
+		// the texture to BGR and setting data to pBgImage
+		printf("Writing %d (of %d)\n", nXRes*3, nYRes);
+		memcpy(pDestImage, pBgImage, nXRes * 3);
+#endif
+
+
+		pDestImage += (sceneTextureData.width - nXRes) *3;
+		pBgImage += (pCvBgImage->widthStep - nXRes*3);
 	}
 }
 
 
-void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
+// Modify the real world image captured by the camera
+inline void ProcessRealWorldImage(
+		const TextureData& sceneTextureData,
+		XnUInt8* pImage)
+{
+	XnUInt16 nXRes = sceneTextureData.XRes;
+	XnUInt16 nYRes = sceneTextureData.YRes;
+	int texWidth = sceneTextureData.width;
+
+	for(int nY=0; nY < nYRes; nY++) {
+		for(int nX=0; nX < nXRes; nX++) {
+			pImage[0] = 0;
+			pImage += 3;
+		}
+	}
+}
+
+
+inline void DrawPlayer(
+		const TextureData& sceneTextureData,
+		const xn::SceneMetaData& smd,
 		const xn::ImageMetaData& imd, XnUserID player)
 {
 	static bool bInitialized = false;
-	static TextureData depthMapTextureData;
+	static XnUInt8* pRealWorldImage;
 
-	XnUInt16 nXRes = dmd.XRes();
-	XnUInt16 nYRes = dmd.YRes();
-
-	if(!bInitialized)
-	{
-		// Initialize pDepthTexBuf char*texWidth*texHeight*4
-		initTexture(&depthMapTextureData, nXRes, nYRes) ;
-
-		memset(g_pfTexCoords, 0, 8*sizeof(float));
-		g_pfTexCoords[0] = depthMapTextureData.Xpos,
-		g_pfTexCoords[1] = depthMapTextureData.Ypos,
-		g_pfTexCoords[2] = depthMapTextureData.Xpos,
-		g_pfTexCoords[7] = depthMapTextureData.Ypos;
-
-		initBackgroundImage(nXRes, nYRes);
-
+	if(!bInitialized) {
+		pRealWorldImage = new XnUInt8[smd.XRes()*smd.YRes()*3];
 		bInitialized = true;
-
-		puts("Initialized");
 	}
 
+	XnUInt16 nXRes = sceneTextureData.XRes;
+	XnUInt16 nYRes = sceneTextureData.YRes;
 
-	unsigned char* pDepthTexBuf = depthMapTextureData.data;
-	GLuint depthTexID = depthMapTextureData.id;
+	unsigned char* pDepthTexBuf = sceneTextureData.data;
+	GLuint depthTexID = sceneTextureData.id;
 
-	int texWidth = depthMapTextureData.width;
-	int texHeight = depthMapTextureData.height;
+	int texWidth = sceneTextureData.width;
+	int texHeight = sceneTextureData.height;
 
-	float texXpos = depthMapTextureData.Xpos;
-	float texYpos = depthMapTextureData.Ypos;
-
+	float texXpos = sceneTextureData.XPos;
+	float texYpos = sceneTextureData.YPos;
 
 	unsigned char* pDestImage = pDepthTexBuf;
 	const XnLabel* pLabels = smd.Data();
-
-	// User pixels == filter(smd.Data(), fun(*d) { return *d != 0; })
-
-	// TODO overlay player with a new texture
 
 	{
 		// Real world image data
 		const XnUInt8* pImage = imd.Data();
 		unsigned int nImdXRes = imd.XRes();
 
-		// Background image data
-		IplImage* pCvBgImage = getBackgroundImage();
-		const XnUInt8* pBgImage = (const XnUInt8*)pCvBgImage->imageData;
+		memcpy(pRealWorldImage, pImage, imd.XRes()*imd.YRes()*3);
+
+		ProcessRealWorldImage(sceneTextureData, pRealWorldImage);
 
 		// Prepare the texture map
 		for (unsigned int nY=0; nY < nYRes; nY++)
@@ -311,39 +361,20 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 			{
 				XnLabel label = *pLabels;
 
-				if(label == 0) {
-					// Draw background image
-					XnUInt8 r,g,b;
-
-					if(nY > pCvBgImage->height || nX > pCvBgImage->width) {
-						r = 0; g = 0; b = 0;
-					} else {
-						r= pBgImage[2];
-						g= pBgImage[1];
-						b= pBgImage[0];
-					}
-
-					pDestImage[0] = r;
-					pDestImage[1] = g;
-					pDestImage[2] = b;
-
-				} else {
+				if(label != 0) {
 					// Player detected, use player image
 					int offset = nY * nImdXRes * 3 + nX * 3;
 
-					pDestImage[0] = pImage[offset + 0];
-					pDestImage[1] = pImage[offset + 1];
-					pDestImage[2] = pImage[offset + 2];
+					pDestImage[0] = pRealWorldImage[offset + 0];
+					pDestImage[1] = pRealWorldImage[offset + 1];
+					pDestImage[2] = pRealWorldImage[offset + 2];
 				}
 
-
 				pLabels++;
-				pBgImage += 3;
 				pDestImage += 3;
 			}
 
 			pDestImage += (texWidth - nXRes) *3;
-			pBgImage += (pCvBgImage->widthStep - nXRes*3);
 		}
 	}
 
@@ -365,6 +396,29 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	{
 		DrawPlayerSkeleton(player);
 	}
+}
+
+void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
+		const xn::ImageMetaData& imd, XnUserID player) {
+
+	static bool bInitialized = false;
+	static TextureData sceneTextureData;
+
+	if(!bInitialized) {
+		initTexture(&sceneTextureData, dmd.XRes(), dmd.YRes());
+
+		memset(g_pfTexCoords, 0, 8*sizeof(float));
+		g_pfTexCoords[0] = sceneTextureData.XPos,
+		g_pfTexCoords[1] = sceneTextureData.YPos,
+		g_pfTexCoords[2] = sceneTextureData.XPos,
+		g_pfTexCoords[7] = sceneTextureData.YPos;
+
+		bInitialized = true;
+	}
+
+	DrawBackground(sceneTextureData);
+
+	DrawPlayer(sceneTextureData, smd, imd, player);
 }
 
 
