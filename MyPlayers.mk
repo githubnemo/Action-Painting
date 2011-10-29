@@ -40,3 +40,6 @@ $(DATA_FOLDER)/%: Data/%
 
 run: $(OUTPUT_FILE) $(DATA)
 	cd $(OUTPUT_DIR) && ./$(shell basename $<)
+
+debug: $(OUTPUT_FILE) $(DATA)
+	cd $(OUTPUT_DIR) && gdb ./$(shell basename $<)
