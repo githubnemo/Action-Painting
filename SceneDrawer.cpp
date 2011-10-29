@@ -304,16 +304,17 @@ inline void ProcessRealWorldImage(
 		const TextureData& sceneTextureData,
 		XnUInt8* pImage)
 {
+#if 0 // Uncomment if something useful is to happen here
 	XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
 	int texWidth = sceneTextureData.width;
 
 	for(int nY=0; nY < nYRes; nY++) {
 		for(int nX=0; nX < nXRes; nX++) {
-			pImage[0] = 0;
 			pImage += 3;
 		}
 	}
+#endif
 }
 
 
