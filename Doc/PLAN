@@ -1,6 +1,9 @@
 * Get hand tracking working
+	* Move tracked points in thread safe queue
+	* Gather points in separate thread
 	* Drawing on canvas
 	* Nice effect
 * Filter player image (oil filter)
 * Resize player image according to Z-Axis
+* Limit player count to one
 * Path limitation (according to polygon or map)
