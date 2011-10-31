@@ -188,7 +188,6 @@ void calcHistogramAdv(cv::MatND& histRed, cv::MatND& histGreen, cv::MatND& histB
 
 
 int main(void) {
-	//IplImage* img = cvLoadImage("./Data/background.jpg");
 
 	CvCapture *capture = 0;
 	/* initialize camera */
@@ -199,35 +198,6 @@ int main(void) {
         return 1;
     }
 
-	//img = cvQueryFrame( capture );
-
-	//data      = (uchar *) img->imageData;
-
-
-
-//	for(int x=0; x < step/3; x++)
-//		data[100 * step + (x*3)] = ;
-
-
-
-	//cv::Mat m = cv::Mat(img, true);
-	/*IplImage img2 = m;
-	img2.height = height;
-	img2.width = width;
-	img2.widthStep = step;
-
-	for(int y=0; y < height; y++) {
-		for(int x=0; x < width; x++) {
-			int ownStep = (width * channels);
-			ownStep += step - ownStep;
-			img2.imageData[y * step + x] = data[y * ownStep + x];
-		}
-	}*/
-
-
-	//img2.imageData[0] = 0xFF;
-	//img2.imageData[1] = 0xFF;
-	//img2.imageData[2] = 0xFF;
 
 	cvNamedWindow("image display", CV_WINDOW_AUTOSIZE);
 	cvNamedWindow("histogram", CV_WINDOW_AUTOSIZE);
