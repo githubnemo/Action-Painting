@@ -82,6 +82,7 @@ IplImage* effect(IplImage * source, int someValue) {
 IplImage * oilFilter(IplImage * source) {
 
 
+
 }
 
 
@@ -176,6 +177,10 @@ void calcHistogramAdv(cv::MatND& histRed, cv::MatND& histGreen, cv::MatND& histB
 		ranges
 	);
 
+	cvReleaseImage(&imgRed);
+	cvReleaseImage(&imgGreen);
+	cvReleaseImage(&imgBlue);
+
 	//double max_value = 0;
 	//minMaxLoc(histogram, 0, &max_value, 0, 0);
 	//printf("only max: %f\n", max_value);
@@ -208,13 +213,13 @@ int main(void) {
 	//cvWaitKey(0);
 
 
-
-	while(1) {
-
+	int i=0;
+	while(i<100) {
+		i++;
 		IplImage* img = cvQueryFrame(capture);
 
 		resizeInPlace(&img, 640, 360, false);
-		img = effect(img, someValue);
+		//img = effect(img, someValue);
 		//showHistogram(img, "histogram");
 		cv::MatND histRed;
 		cv::MatND histGreen;
@@ -225,12 +230,17 @@ int main(void) {
 
 		IplImage * foo = drawHistogram(&histBlue, 3);
 		cvShowImage( "histogram", foo );
+		cvReleaseImage(&foo);
 
 		cvShowImage("image display", img);
 
+		// Clean up
 		cvReleaseImage(&img);
+		histRed.release();
+		histGreen.release();
+		histBlue.release();
 
-		cvWaitKey( 1 );
+		//cvWaitKey( 1 );
 	}
 
 
