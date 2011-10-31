@@ -3,6 +3,26 @@
 #include <cv.h>
 #include <highgui.h>
 
+/*
+ * Performs an in-place resizing (that, is the old image is destroyed!) of the passed
+ * image to the specified width and height.
+ */
+IplImage* resizeInPlace(IplImage** image, int width, int height, bool releaseSourceImage = true) {
+	assert(width > 0 && height > 0);
+
+	IplImage* source = *image;
+
+	cv::Size targetSize = cv::Size(width, height);
+	IplImage* target = cvCreateImage(targetSize, source->depth, source->nChannels);
+
+	cvResize(source, target, CV_INTER_LINEAR);
+
+	if(releaseSourceImage) {
+		cvReleaseImage(&source);
+	}
+
+	*image = target;
+}
 
 
 IplImage* effect(IplImage * source, int someValue) {
