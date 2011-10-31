@@ -239,19 +239,30 @@ int main(void) {
 	
 	while(1) {
 
-		img = cvQueryFrame(capture);
-		
+		IplImage* img = cvQueryFrame(capture);
 
+		resizeInPlace(&img, 640, 360, false);
 		img = effect(img, someValue);
 		//showHistogram(img, "histogram");
-		showHistogramAdv(img);
+		cv::MatND histRed;
+		cv::MatND histGreen;
+		cv::MatND histBlue;
+
+		calcHistogramAdv(histRed, histGreen, histBlue, img);
+
+
+		IplImage * foo = drawHistogram(&histBlue, 3);
+		cvShowImage( "histogram", foo );
+
 		cvShowImage("image display", img);
-		
+
+		cvReleaseImage(&img);
+
 		cvWaitKey( 1 );
 	}
 
 
-	cvReleaseImage(&img);
+	//cvReleaseImage(&img);
 
 	return 0;
 }
