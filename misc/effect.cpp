@@ -118,15 +118,17 @@ IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
 	return imgHist;
 }
 
-void showHistogramAdv(IplImage * img) {
+void calcHistogramAdv(cv::MatND& histRed, cv::MatND& histGreen, cv::MatND& histBlue, IplImage * img) {
 
 	IplImage* imgRed = cvCreateImage(cvGetSize(img), 8, 1);
     IplImage* imgGreen = cvCreateImage(cvGetSize(img), 8, 1);
     IplImage* imgBlue = cvCreateImage(cvGetSize(img), 8, 1);
- 
+
     cvSplit(img, imgBlue, imgGreen, imgRed, NULL);
 
 	cv::Mat red = cv::Mat(imgRed);
+	cv::Mat green = cv::Mat(imgGreen);
+	cv::Mat blue = cv::Mat(imgBlue);
 
 	int bins = 256;
 	int images = 1;
@@ -138,26 +140,47 @@ void showHistogramAdv(IplImage * img) {
 	const float * ranges[] = { rgbrange };
 	cv::Mat mask = cv::Mat();
 
-	cv::MatND histogram;
-	
+
 	cv::calcHist(
 		&red,
 		images,
 		&channels,
 		mask,
-		histogram,
+		histRed,
 		dimensions,
 		histSize,
 		ranges
 	);
 
-	double max_value = 0;
-	minMaxLoc(histogram, 0, &max_value, 0, 0);
-	printf("only max: %f\n", max_value);
 
-	
-	IplImage * foo = drawHistogram(&histogram, 3);
-    cvShowImage( "histogram", foo );
+	cv::calcHist(
+		&green,
+		images,
+		&channels,
+		mask,
+		histGreen,
+		dimensions,
+		histSize,
+		ranges
+	);
+
+
+	cv::calcHist(
+		&blue,
+		images,
+		&channels,
+		mask,
+		histBlue,
+		dimensions,
+		histSize,
+		ranges
+	);
+
+	//double max_value = 0;
+	//minMaxLoc(histogram, 0, &max_value, 0, 0);
+	//printf("only max: %f\n", max_value);
+
+
 }
 
 
