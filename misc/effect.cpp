@@ -43,22 +43,22 @@ IplImage* effect(IplImage * source, int someValue) {
 	width     = target->width;
 	step      = target->widthStep;
 	channels  = target->nChannels;
-	
+
 	data = (uchar*) target->imageData;
 	laplaceData = (uchar*) laplace->imageData;
 
-	
+
 	cv::Size * largeBlur = new cv::Size(15, 15);
 	cv::Size * smallBlur = new cv::Size(someValue+1, someValue+1);
 
-	cv::Mat targetMat = cv::Mat(target); 
+	cv::Mat targetMat = cv::Mat(target);
 	cv::Mat laplaceMat = cv::Mat(laplace);
 
 	cv::Laplacian(targetMat, laplaceMat, 8, 1, 10);
 	cv::blur(targetMat, targetMat, *largeBlur); // In place blur
 
 	cv::blur(laplaceMat, laplaceMat, *smallBlur);
-	
+
 	/*
 	printf("Processing a %dx%d image with %d channels, widthStep is %d\n",
 			height,width,channels, step);
@@ -88,11 +88,11 @@ IplImage * oilFilter(IplImage * source) {
 
 IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
 	double histMax = 0;
-	 
-	
+
+
 	cv::MatND histogram = *histogramPointer;
 	minMaxLoc(histogram, 0, &histMax, 0, 0);
-	
+
 	int scaleX, scaleY;
 	scaleX = scaleY = scale;
 
@@ -108,10 +108,10 @@ IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
         CvPoint pt2 = cvPoint(i*scaleX+scaleX, 64*scaleY);
         CvPoint pt3 = cvPoint(i*scaleX+scaleX, (64-nextValue*64/histMax)*scaleY);
         CvPoint pt4 = cvPoint(i*scaleX, (64-histValue*64/histMax)*scaleY);
- 
+
         int numPts = 5;
         CvPoint pts[] = {pt1, pt2, pt3, pt4, pt1};
- 
+
         cvFillConvexPoly(imgHist, pts, numPts, cvScalar(127));
     }
 
@@ -188,17 +188,17 @@ void calcHistogramAdv(cv::MatND& histRed, cv::MatND& histGreen, cv::MatND& histB
 
 
 int main(void) {
-	IplImage* img = cvLoadImage("./Data/background.jpg");
+	//IplImage* img = cvLoadImage("./Data/background.jpg");
 
 	CvCapture *capture = 0;
 	/* initialize camera */
     capture = cvCaptureFromCAM( 0 );
-	
+
     if ( !capture ) {
         fprintf( stderr, "Cannot open initialize webcam!\n" );
         return 1;
     }
-	
+
 	//img = cvQueryFrame( capture );
 
 	//data      = (uchar *) img->imageData;
@@ -223,7 +223,7 @@ int main(void) {
 			img2.imageData[y * step + x] = data[y * ownStep + x];
 		}
 	}*/
-	
+
 
 	//img2.imageData[0] = 0xFF;
 	//img2.imageData[1] = 0xFF;
@@ -232,11 +232,13 @@ int main(void) {
 	cvNamedWindow("image display", CV_WINDOW_AUTOSIZE);
 	cvNamedWindow("histogram", CV_WINDOW_AUTOSIZE);
 	//cvMoveWindow("image display", 0, 0);
-	
+
 	int someValue = 0;
 	cvCreateTrackbar( "some value", "image display", &someValue, 100, NULL );
 	//cvWaitKey(0);
-	
+
+
+
 	while(1) {
 
 		IplImage* img = cvQueryFrame(capture);
