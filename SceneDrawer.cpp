@@ -273,6 +273,7 @@ inline void DrawBackground(TextureData& sceneTextureData)
 
 	if(!bInitialized) {
 		initBackgroundImage(nXRes, nYRes);
+		bInitialized = true;
 	}
 
 	// Background image data
