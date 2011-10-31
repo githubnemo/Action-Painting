@@ -80,72 +80,10 @@ IplImage* effect(IplImage * source, int someValue) {
 
 
 IplImage * oilFilter(IplImage * source) {
-	
+
 
 }
 
-
-
-IplImage* DrawHistogram(CvHistogram *hist, float scaleX=1, float scaleY=1)
-{
-	float histMax = 0;
-    cvGetMinMaxHistValue(hist, 0, &histMax, 0, 0);
-	
-	IplImage* imgHist = cvCreateImage(cvSize(256*scaleX, 64*scaleY), 8 ,1);
-    cvZero(imgHist);
-
-	 for(int i=0;i<255;i++)
-    {
-        float histValue = cvQueryHistValue_1D(hist, i);
-        float nextValue = cvQueryHistValue_1D(hist, i+1);
- 
-        CvPoint pt1 = cvPoint(i*scaleX, 64*scaleY);
-        CvPoint pt2 = cvPoint(i*scaleX+scaleX, 64*scaleY);
-        CvPoint pt3 = cvPoint(i*scaleX+scaleX, (64-nextValue*64/histMax)*scaleY);
-        CvPoint pt4 = cvPoint(i*scaleX, (64-histValue*64/histMax)*scaleY);
- 
-        int numPts = 5;
-        CvPoint pts[] = {pt1, pt2, pt3, pt4, pt1};
- 
-        cvFillConvexPoly(imgHist, pts, numPts, cvScalar(255));
-    }
-
-	return imgHist;
-}
-
-
-
-void showHistogram(IplImage * img, const char* windowName) {
-
-	IplImage* imgRed = cvCreateImage(cvGetSize(img), 8, 1);
-    IplImage* imgGreen = cvCreateImage(cvGetSize(img), 8, 1);
-    IplImage* imgBlue = cvCreateImage(cvGetSize(img), 8, 1);
- 
-    cvSplit(img, imgBlue, imgGreen, imgRed, NULL);
-
-	cv::Mat rgb(imgRed);
-    
-    int bins = 256;
-    int histSize[] = { bins };
-    
-    float rgbranges[] = { 0,  256 };
-    
-    float* ranges[] = { rgbranges };
-    CvHistogram * hist;
-    
-    int channels[] = {0};
-
-	float min_value, max_value;	
-	
-	//get the histogram and some info about it
-	hist = cvCreateHist( 1, histSize, CV_HIST_ARRAY, ranges, 1);
-	cvCalcHist( &imgRed, hist, 0, NULL);
-	cvGetMinMaxHistValue( hist, &min_value, &max_value);
-	printf("min: %f, max: %f\n", min_value, max_value);
-
-	IplImage * foo = DrawHistogram(hist, 3, 3);
-    cvShowImage( windowName, foo );
-}
 
 
 IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
