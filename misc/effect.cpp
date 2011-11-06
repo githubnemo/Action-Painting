@@ -60,9 +60,9 @@ IplImage* effect(IplImage * source, int someValue) {
 	cv::blur(laplaceMat, laplaceMat, *smallBlur);
 
 	/*
-	printf("Processing a %dx%d image with %d channels, widthStep is %d\n",
-			height,width,channels, step);
-	/**/
+     printf("Processing a %dx%d image with %d channels, widthStep is %d\n",
+     height,width,channels, step);
+     /**/
 
 	int laplaceThreshold = 120;
 
@@ -100,7 +100,7 @@ IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
 	IplImage* imgHist = cvCreateImage(cvSize(256*scaleX, 64*scaleY), 8 ,1);
     cvZero(imgHist);
 
-	 for(int i=0;i<255;i++)
+    for(int i=0;i<255;i++)
     {
         float histValue = histogram.at<float>(i);
         float nextValue = histogram.at<float>(i+1);
@@ -117,6 +117,49 @@ IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
     }
 
 	return imgHist;
+}
+
+void calcLeveledHistogram(IplImage* img, int levels,
+                          cv::MatND& histRed,
+                          cv::MatND& histGreen,
+                          cv::MatND& histBlue) {
+
+    IplImage* imgRed = cvCreateImage(cvGetSize(img), 8, 1);
+    IplImage* imgGreen = cvCreateImage(cvGetSize(img), 8, 1);
+    IplImage* imgBlue = cvCreateImage(cvGetSize(img), 8, 1);
+
+    cvSplit(img, imgBlue, imgGreen, imgRed, NULL);
+
+	cv::Mat red = cv::Mat(imgRed);
+	cv::Mat green = cv::Mat(imgGreen);
+	cv::Mat blue = cv::Mat(imgBlue);
+
+    red = cv::Scalar(0);
+    green = cv::Scalar(0);
+    blue = cv::Scalar(0);
+
+    int width = img->width;
+    int height = img->height;
+
+
+
+    for(int y=0; y<height; y++) {
+        for(int x=0; x<width; x++) {
+
+            uchar r = red.at<uchar>(y,x);
+            uchar g = green.at<uchar>(y,x);
+            uchar b = blue.at<uchar>(y,x);
+
+            int ri = r * levels / 256;
+            int gi = g * levels / 256;
+            int bi = b * levels / 256;
+
+            histRed.at<float>(r) += 1.f;
+            histGreen.at<float>(g) += 1.f;
+            histBlue.at<float>(b) += 1.f;
+        }
+    }
+
 }
 
 void calcHistogramAdv(cv::MatND& histRed, cv::MatND& histGreen, cv::MatND& histBlue, IplImage * img) {
@@ -143,39 +186,39 @@ void calcHistogramAdv(cv::MatND& histRed, cv::MatND& histGreen, cv::MatND& histB
 
 
 	cv::calcHist(
-		&red,
-		images,
-		&channels,
-		mask,
-		histRed,
-		dimensions,
-		histSize,
-		ranges
-	);
+                 &red,
+                 images,
+                 &channels,
+                 mask,
+                 histRed,
+                 dimensions,
+                 histSize,
+                 ranges
+                 );
 
 
 	cv::calcHist(
-		&green,
-		images,
-		&channels,
-		mask,
-		histGreen,
-		dimensions,
-		histSize,
-		ranges
-	);
+                 &green,
+                 images,
+                 &channels,
+                 mask,
+                 histGreen,
+                 dimensions,
+                 histSize,
+                 ranges
+                 );
 
 
 	cv::calcHist(
-		&blue,
-		images,
-		&channels,
-		mask,
-		histBlue,
-		dimensions,
-		histSize,
-		ranges
-	);
+                 &blue,
+                 images,
+                 &channels,
+                 mask,
+                 histBlue,
+                 dimensions,
+                 histSize,
+                 ranges
+                 );
 
 	cvReleaseImage(&imgRed);
 	cvReleaseImage(&imgGreen);
@@ -214,12 +257,12 @@ int main(void) {
 
 
 	int i=0;
-	while(i<100) {
-		i++;
+	while(1) {
+		//i++;
 		IplImage* img = cvQueryFrame(capture);
 
 		resizeInPlace(&img, 640, 360, false);
-		//img = effect(img, someValue);
+//		img = effect(img, someValue);
 		//showHistogram(img, "histogram");
 		cv::MatND histRed;
 		cv::MatND histGreen;
@@ -227,8 +270,18 @@ int main(void) {
 
 		calcHistogramAdv(histRed, histGreen, histBlue, img);
 
+        const int histSize[] = {256};
+        cv::MatND histRedA(1, histSize, CV_32F);
+        cv::MatND histGreenA(1, histSize, CV_32F);
+        cv::MatND histBlueA(1, histSize, CV_32F);
+        calcLeveledHistogram(img, 256, histRedA, histGreenA, histBlueA);
 
-		IplImage * foo = drawHistogram(&histBlue, 3);
+
+        double max_value = 0;
+        minMaxLoc(histRedA, 0, &max_value, 0, 0);
+        printf("only max: %f\n", max_value);
+
+		IplImage * foo = drawHistogram(&histRedA, 3);
 		cvShowImage( "histogram", foo );
 		cvReleaseImage(&foo);
 
@@ -240,7 +293,7 @@ int main(void) {
 		histGreen.release();
 		histBlue.release();
 
-		//cvWaitKey( 1 );
+		cvWaitKey( 1 );
 	}
 
 
@@ -248,5 +301,6 @@ int main(void) {
 
 	return 0;
 }
+
 
 
