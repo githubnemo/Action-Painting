@@ -339,6 +339,25 @@ inline void ProcessRealWorldImage(
 		}
 	}
 #endif
+
+	XnUInt16 nXRes = sceneTextureData.XRes;
+	XnUInt16 nYRes = sceneTextureData.YRes;
+
+	IplImage * image = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
+	image->imageData = (char*) source;
+	cv::Mat imageMat(image);
+
+	IplImage * targetImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
+	char * p = targetImage->imageData; // Save the data pointer, because we need to free it later
+	targetImage->imageData = (char*) target;
+	cv::Mat targetImageMat(targetImage);
+
+	cv::medianBlur(imageMat, targetImageMat, 11);
+
+	targetImage->imageData = p;
+	cvReleaseImage(&image);
+	cvReleaseImage(&targetImage);
+	//cvShowImage("image display", targetImage);
 }
 
 
@@ -390,9 +409,9 @@ inline void DrawPlayer(
 					// Player detected, use player image
 					int offset = nY * nImdXRes * 3 + nX * 3;
 
-					pDestImage[0] = pRealWorldImage[offset + 0];
-					pDestImage[1] = pRealWorldImage[offset + 1];
-					pDestImage[2] = pRealWorldImage[offset + 2];
+					pDestImage[0] = pRealWorldImage[offset + 0] & 0xF0;
+					pDestImage[1] = pRealWorldImage[offset + 1] & 0xF0;
+					pDestImage[2] = pRealWorldImage[offset + 2] & 0xF0;
 				}
 
 				pLabels++;
