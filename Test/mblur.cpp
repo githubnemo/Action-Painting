@@ -13,6 +13,79 @@ typedef struct rgb {
 	uchar r, g, b;
 } rgb;
 
+typedef struct mask_s {
+	const uchar* mask;
+	int width;
+	int height;
+} mask_t;
+
+
+
+void getMaskPixels(const mask_t& mask, uchar* masked, uchar* img, int step, int height, int x, int y) {
+	int my = y - (mask.height/2);	// Mask left top corner position
+	int mx = x - (mask.width/2);	// is at (my,mx).
+
+	int h = mask.height;
+	int w = mask.width;
+
+	// Get pixel to mask
+	for(int i=0; i < h; i++) {
+		for(int j=0; j < w; j++) {
+			int rvalue = 0;
+			int gvalue = 0;
+			int bvalue = 0;
+
+			if(mask.mask[i*mask.height + j]
+			&& mx+(j*3) >= 0 && mx+(j*3) < step && my+i < height ) {
+				bvalue = getPixel(img, step, (mx+(j*3)+0), my+i);
+				gvalue = getPixel(img, step, (mx+(j*3)+1), my+i);
+				rvalue = getPixel(img, step, (mx+(j*3)+2), my+i);
+			}
+
+			masked[i*mask.width + j + 0] = bvalue;
+			masked[i*mask.width + j + 1] = gvalue;
+			masked[i*mask.width + j + 2] = rvalue;
+		}
+	}
+}
+
+void applyMotionMask(
+		const mask_t& mask,
+		uchar* masked1,
+		uchar* masked2,
+		uchar* simg,
+		uchar* timg,
+		int step,
+		int height,
+		int x1,	// from
+		int y1,
+		int x2,	// to
+		int y2)
+{
+	getMaskPixels(mask, masked1, simg, step, height, x1, y1);
+	getMaskPixels(mask, masked2, simg, step, height, x2, y2);
+
+	int h = mask.height;
+	int w = mask.width;
+
+	for(int i=0; i < h; i++) {
+		for(int j=0; j < w; j++) {
+			int lpos = i*w+j;
+
+			int bvalue = (masked1[lpos + 0] + masked2[lpos + 0]) / 2;
+			int gvalue = (masked1[lpos + 1] + masked2[lpos + 1]) / 2;
+			int rvalue = (masked1[lpos + 2] + masked2[lpos + 2]) / 2;
+
+			timg[(y2+i)*step + x2+(j*3) + 0] = bvalue;
+			timg[(y2+i)*step + x2+(j*3) + 1] = gvalue;
+			timg[(y2+i)*step + x2+(j*3) + 2] = rvalue;
+		}
+	}
+}
+
+
+
+
 
 rgb applyMask(
 		const uchar* mask,
@@ -86,20 +159,20 @@ int main(void) {
 	 */
 
 
-	/*
+#if 1
 	const uchar mask[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1,
 						   1, 1, 1, 1, 1, 1, 1, 1, 1,
 						   1, 1, 1, 1, 1, 1, 1, 1, 1,
 						   1, 1, 1, 1, 1, 1, 1, 1, 1,
-						   1, 1, 1, 1, 2, 2, 2, 2, 2,
-						   1, 1, 1, 1, 2, 2, 2, 3, 3,
-						   1, 1, 1, 1, 2, 2, 2, 3, 3,
-						   1, 1, 1, 1, 2, 2, 3, 3, 3,
-						   1, 1, 1, 1, 2, 2, 3, 3, 4,};
-	*/
+						   1, 1, 1, 1, 1, 1, 1, 1, 1,
+						   1, 1, 1, 1, 1, 1, 1, 1, 1,
+						   1, 1, 1, 1, 1, 1, 1, 1, 1,
+						   1, 1, 1, 1, 1, 1, 1, 1, 1,
+						   1, 1, 1, 1, 1, 1, 1, 1, 1,};
+#endif
 
-	int maskWidth = 5;
-	int maskHeight = 5;
+	int maskWidth = 9;
+	int maskHeight = 9;
 
 #if 0
 	const uchar mask[] = { 1, 1, 1,
@@ -107,10 +180,10 @@ int main(void) {
 						   1, 1, 1 };
 #endif
 
-#if 1
-	const uchar mask[] = { 0, 0, 1, 1, 1,
-						   0, 0, 1, 1, 1,
-						   1, 1, 0, 1, 1,
+#if 0
+	const uchar mask[] = { 1, 1, 1, 1, 1,
+						   1, 1, 1, 1, 1,
+						   1, 1, 1, 1, 1,
 						   1, 1, 1, 1, 1,
 						   1, 1, 1, 1, 1};
 #endif
@@ -123,12 +196,24 @@ int main(void) {
 						   0, 0, 1, 0, 0};
 #endif
 
-	uchar* masked = new uchar[maskWidth*maskHeight];
+	uchar* masked1 = new uchar[maskWidth*maskHeight*3];
+	uchar* masked2 = new uchar[maskWidth*maskHeight*3];
 	rgb v = {0,0,0};
 
 	uchar* imgcopy = new uchar[height*step];
 	memcpy(imgcopy, img->imageData, height*step);
 
+	mask_t maskData = {mask, maskWidth, maskHeight};
+
+	int x = 100;
+	int y = 100;
+
+	applyMotionMask(maskData, masked1, masked2, imgcopy, data, step, height, x, y, x+5*3, y+5);
+	applyMotionMask(maskData, masked1, masked2, imgcopy, data, step, height, x+5*3, y+5, x+10*3, y+10);
+	applyMotionMask(maskData, masked1, masked2, imgcopy, data, step, height, x+10*3, y+10, x+15*3, y+15);
+
+
+#if 0
 	for(int y=0; y < height; y++) {
 		for(int x=0; x < step; x+=3) {
 			v = applyMask(mask, masked, imgcopy, x, y, maskWidth, maskHeight, step, height);
@@ -138,7 +223,7 @@ int main(void) {
 			img->imageData[y * step + x+2] = v.r;
 		}
 	}
-
+#endif
 
 
 	cvNamedWindow("image display", CV_WINDOW_AUTOSIZE);
