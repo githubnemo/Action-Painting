@@ -4,6 +4,22 @@ The following is an attempt to document the PointViewer example
 code of the NITE package.
 
 
+NOT WORKING WITH MANUAL UPDATE.
+MAYBE DUE TO DIFFERENT CONTEXT.
+SEE http://stackoverflow.com/questions/742090/how-to-draw-opengl-graphics-from-different-threads
+
+
+## Multiple Hands
+
+In order to get multi hand tracking to work, one has to set the following
+options in the `primesense/Hands_x_y_z/Nite.ini` config file. If you have
+NITE globally installed, this file is located in `/usr/etc/`.
+
+	[HandTrackerManager]
+	AllowMultipleHands=1
+	TrackAdditionalHands=1
+
+
 ## Setup
 
 The code as found in main.cpp:
