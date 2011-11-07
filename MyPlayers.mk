@@ -12,14 +12,20 @@ DEFINES = USE_GLUT
 
 ifeq ("$(OSTYPE)","Darwin")
         LDFLAGS += -framework OpenGL -framework GLUT
+		USED_LIBS += opencv_core
+		USED_LIBS += opencv_highgui
+		USED_LIBS += opencv_imgproc
+#		USED_LIBS += cxcore
+		INC_DIRS += /usr/local/include/opencv
+
 else
-        USED_LIBS += glut
+		USED_LIBS += glut
+		USED_LIBS += cv
+		USED_LIBS += highgui
+		USED_LIBS += cxcore
+		INC_DIRS += /usr/include/opencv
 endif
 
-USED_LIBS += cv
-USED_LIBS += highgui
-USED_LIBS += cxcore
-INC_DIRS += /usr/include/opencv
 
 include ../NiteSampleMakefile
 
