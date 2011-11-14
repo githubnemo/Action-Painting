@@ -15,6 +15,8 @@
 #include <XnVPointControl.h>
 #include <XnVHandPointContext.h>
 
+#include <highgui.h> // Debug
+
 xn::Context g_Context;
 xn::ScriptNode g_ScriptNode;
 xn::DepthGenerator g_DepthGenerator;
@@ -235,6 +237,8 @@ void glutDisplay (void)
 		// Read next available data
 		g_Context.WaitOneUpdateAll(g_DepthGenerator);
 
+		g_pSessionManager->Update(&g_Context);
+
 		{
 			xn::SceneMetaData sceneMD;
 			xn::DepthMetaData depthMD;
@@ -247,7 +251,6 @@ void glutDisplay (void)
 			DrawScene(depthMD, sceneMD, imageMD, g_nPlayer);
 		}
 
-		g_pSessionManager->Update(&g_Context);
 	}
 
 	if (g_nPlayer != 0)
@@ -445,5 +448,11 @@ int main(int argc, char **argv)
 
 
 	glInit(&argc, argv);
+
+	/* Debug effect windows
+	cvNamedWindow("test image", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow("source image", CV_WINDOW_AUTOSIZE);
+	*/
+
 	glutMainLoop();
 }
