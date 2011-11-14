@@ -98,9 +98,9 @@ IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
         float nextValue = histogram.at<float>(i+1);
 
         CvPoint pt1 = cvPoint(i*scaleX, 64*scaleY);
-        CvPoint pt2 = cvPoint(i*scaleX+scaleX, 64*scaleY);
-        CvPoint pt3 = cvPoint(i*scaleX+scaleX, (64-nextValue*64/histMax)*scaleY);
-        CvPoint pt4 = cvPoint(i*scaleX, (64-histValue*64/histMax)*scaleY);
+        CvPoint pt2 = cvPoint((int) i*scaleX+scaleX, 64*scaleY);
+        CvPoint pt3 = cvPoint(i*scaleX+scaleX, (int) (64-nextValue*64/histMax)*scaleY);
+        CvPoint pt4 = cvPoint((int) i*scaleX, (int) (64-histValue*64/histMax)*scaleY);
 
         int numPts = 5;
         CvPoint pts[] = {pt1, pt2, pt3, pt4, pt1};
@@ -255,8 +255,6 @@ int main(void) {
 	cvCreateTrackbar( "some value", "image display", &someValue, 100, NULL );
 	//cvWaitKey(0);
 
-
-	int i=0;
 	while(1) {
 		//i++;
 		IplImage* img = cvQueryFrame(capture);
