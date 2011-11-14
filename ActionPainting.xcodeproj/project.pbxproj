@@ -8,10 +8,20 @@
 
 /* Begin PBXBuildFile section */
 		A0D74B341471045D000C0D85 /* effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0A6856E14710319003B498E /* effect.cpp */; };
+		A0F441E0147130BB00210B19 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F441DF147130BB00210B19 /* main.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		A0D74B2814710419000C0D85 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		A0F441DA147130BB00210B19 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -65,10 +75,19 @@
 		A0A6857B14710319003B498E /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		A0A6857C14710319003B498E /* mblur.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mblur.cpp; sourceTree = "<group>"; };
 		A0D74B2A14710419000C0D85 /* ActionPaintingEffect */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ActionPaintingEffect; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0F441DC147130BB00210B19 /* SmudgeEffect */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SmudgeEffect; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0F441DF147130BB00210B19 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A0D74B2714710419000C0D85 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A0F441D9147130BB00210B19 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -94,6 +113,7 @@
 				A0A6857814710319003B498E /* SceneDrawer.cpp */,
 				A0A6857914710319003B498E /* SceneDrawer.h */,
 				A0A6857A14710319003B498E /* Test */,
+				A0F441DE147130BB00210B19 /* SmudgeEffect */,
 				A0D74B1B14710380000C0D85 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -194,8 +214,17 @@
 			isa = PBXGroup;
 			children = (
 				A0D74B2A14710419000C0D85 /* ActionPaintingEffect */,
+				A0F441DC147130BB00210B19 /* SmudgeEffect */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A0F441DE147130BB00210B19 /* SmudgeEffect */ = {
+			isa = PBXGroup;
+			children = (
+				A0F441DF147130BB00210B19 /* main.cpp */,
+			);
+			path = SmudgeEffect;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -216,6 +245,23 @@
 			name = ActionPaintingEffect;
 			productName = ActionPaintingEffect;
 			productReference = A0D74B2A14710419000C0D85 /* ActionPaintingEffect */;
+			productType = "com.apple.product-type.tool";
+		};
+		A0F441DB147130BB00210B19 /* SmudgeEffect */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A0F441E5147130BB00210B19 /* Build configuration list for PBXNativeTarget "SmudgeEffect" */;
+			buildPhases = (
+				A0F441D8147130BB00210B19 /* Sources */,
+				A0F441D9147130BB00210B19 /* Frameworks */,
+				A0F441DA147130BB00210B19 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SmudgeEffect;
+			productName = SmudgeEffect;
+			productReference = A0F441DC147130BB00210B19 /* SmudgeEffect */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -239,6 +285,7 @@
 			projectRoot = "";
 			targets = (
 				A0D74B2914710419000C0D85 /* ActionPaintingEffect */,
+				A0F441DB147130BB00210B19 /* SmudgeEffect */,
 			);
 		};
 /* End PBXProject section */
@@ -252,18 +299,40 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A0F441D8147130BB00210B19 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0F441E0147130BB00210B19 /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		A02BDC56147102C1004B158E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				HEADER_SEARCH_PATHS = "/usr/local/include/opencv/**";
+				OTHER_LDFLAGS = (
+					"-lopencv_highgui",
+					"-lopencv_imgproc",
+					"-lopencv_core",
+				);
 			};
 			name = Debug;
 		};
 		A02BDC57147102C1004B158E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				HEADER_SEARCH_PATHS = "/usr/local/include/opencv/**";
+				OTHER_LDFLAGS = (
+					"-lopencv_highgui",
+					"-lopencv_imgproc",
+					"-lopencv_core",
+				);
 			};
 			name = Release;
 		};
@@ -282,19 +351,12 @@
 					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = "/usr/local/include/opencv/**";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"-lopencv_highgui",
-					"-lopencv_imgproc",
-					"-lopencv_core",
-				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 			};
@@ -309,18 +371,56 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = "/usr/local/include/opencv/**";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
-				OTHER_LDFLAGS = (
-					"-lopencv_highgui",
-					"-lopencv_imgproc",
-					"-lopencv_core",
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A0F441E3147130BB00210B19 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
 				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A0F441E4147130BB00210B19 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 			};
@@ -343,6 +443,15 @@
 			buildConfigurations = (
 				A0D74B3214710419000C0D85 /* Debug */,
 				A0D74B3314710419000C0D85 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A0F441E5147130BB00210B19 /* Build configuration list for PBXNativeTarget "SmudgeEffect" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A0F441E3147130BB00210B19 /* Debug */,
+				A0F441E4147130BB00210B19 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 		};
