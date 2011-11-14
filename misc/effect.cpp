@@ -79,14 +79,6 @@ IplImage* effect(IplImage * source, int someValue) {
 
 
 
-IplImage * oilFilter(IplImage * source) {
-
-
-
-}
-
-
-
 IplImage * drawHistogram(cv::MatND * histogramPointer, int scale) {
 	double histMax = 0;
 
