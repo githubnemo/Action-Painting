@@ -370,7 +370,7 @@ inline void ProcessRealWorldImage(
  * using cvErode. Returns the pointer to the newly allocated
  * user pixels.
  */
-XnLabel* SmoothenUserPixels(
+inline XnLabel* SmoothenUserPixels(
 		const TextureData &sceneTextureData,
 		const XnLabel* pLabels)
 {
