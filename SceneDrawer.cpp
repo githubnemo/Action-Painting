@@ -409,7 +409,7 @@ inline XnLabel* SmoothenUserPixels(
 	srcImage->imageData = (char*) srcImageData;
 
 	// Do the erosion, 2 iterations (more iterations -> more erosion)
-	cvErode(srcImage, targetImage, erodeKernel, 2);
+	cvErode(srcImage, targetImage, erodeKernel, 1);
 
 	/* Debug output
 	cvShowImage("source image", srcImage);
@@ -433,7 +433,8 @@ inline XnLabel* SmoothenUserPixels(
 inline void DrawPlayer(
 		const TextureData& sceneTextureData,
 		const xn::SceneMetaData& smd,
-		const xn::ImageMetaData& imd, XnUserID player)
+		const xn::ImageMetaData& imd,
+		XnUserID player)
 {
 	static bool bInitialized = false;
 	static XnUInt8* pRealWorldImage;
@@ -477,7 +478,7 @@ inline void DrawPlayer(
 			{
 				XnLabel label = *pLabels;
 
-				if(label != 0) {
+				if(label) {
 					// Player detected, use player image
 					int offset = nY * nImdXRes * 3 + nX * 3;
 
