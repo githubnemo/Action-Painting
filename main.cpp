@@ -23,7 +23,6 @@ xn::ScriptNode g_ScriptNode;
 xn::DepthGenerator g_DepthGenerator;
 xn::ImageGenerator g_ImageGenerator;
 xn::UserGenerator g_UserGenerator;
-xn::HandsGenerator g_HandsGenerator;
 xn::GestureGenerator g_GestureGenerator;
 xn::SkeletonCapability* g_SkeletonCap;
 
@@ -391,8 +390,6 @@ int main(int argc, char **argv)
 	CHECK_RC(rc, "Find user generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_IMAGE, g_ImageGenerator);
 	CHECK_RC(rc, "Find image generator");
-	rc = g_Context.FindExistingNode(XN_NODE_TYPE_HANDS, g_HandsGenerator);
-	CHECK_RC(rc, "Find hands generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_GESTURE, g_GestureGenerator);
 	CHECK_RC(rc, "Find gesture generator");
 
@@ -447,23 +444,6 @@ int main(int argc, char **argv)
 	rc = g_UserGenerator.GetPoseDetectionCap().RegisterToPoseDetected(
 			PoseDetected, NULL, hPoseCBs);
 	CHECK_RC(rc, "Register to pose detected");
-
-
-	// Give me more points, hand generator!
-	g_HandsGenerator.SetSmoothing(0.1);
-
-
-	// Setup hand tracking mechanism and drawing class
-	g_pSessionManager = new XnVSessionManager;
-	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
-	CHECK_RC(rc, "SessionManager::Initialize");
-
-	SceneDrawer* sceneDrawer = new SceneDrawer(20);
-
-	g_pFlowRouter = new XnVFlowRouter;
-	g_pFlowRouter->SetActive(sceneDrawer);
-
-	g_pSessionManager->AddListener(g_pFlowRouter);
 
 
 	// Fire up all generators
