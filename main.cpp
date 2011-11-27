@@ -258,22 +258,20 @@ void glutDisplay (void)
 		// Read next available data
 		g_Context.WaitOneUpdateAll(g_DepthGenerator);
 
-		g_pSessionManager->Update(&g_Context);
-
 		{
 			xn::SceneMetaData sceneMD;
 			xn::DepthMetaData depthMD;
 			xn::ImageMetaData imageMD;
 
 			g_DepthGenerator.GetMetaData(depthMD);
-			g_UserGenerator.GetUserPixels(0, sceneMD);
+			g_UserGenerator.GetUserPixels(g_nPlayer, sceneMD);
 			g_ImageGenerator.GetMetaData(imageMD);
 
 			DrawScene(depthMD, sceneMD, imageMD, g_nPlayer);
 		}
-
 	}
 
+	/*
 	if (g_nPlayer != 0)
 	{
 		XnPoint3D com;
@@ -284,6 +282,7 @@ void glutDisplay (void)
 			FindPlayer();
 		}
 	}
+	*/
 
 	#ifdef USE_GLUT
 	glutSwapBuffers();
