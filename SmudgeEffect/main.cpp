@@ -12,9 +12,14 @@
 #include <highgui.h>
 
 
+
+bool debug = FALSE;
+
+
 IplImage* img;
 IplImage* screenBuffer;
 bool dragging = FALSE;
+
 
 // Algorithm parameters
 int brushRadius = 10;       // Radius of the brush
@@ -225,16 +230,17 @@ void applySmudge(int x, int y)
         
         if(deltaX > 0) {
             // y = slope*x + b
-            int slope = deltaY / deltaX;
-            int b = y - (x * slope);
+            double slope = (double) deltaY / (double) deltaX;
+            double b = y - (x * slope);
             
             int cX = lastX;
             while(cX < x) {
                 cX++;
-                int cY = cX * slope + b;
+                double cY = cX * slope + b;
                 drawSingleSmudgeStep(cX, cY);
                 
-                printf("--> cX: %d, cY: %d \n", cX, cY);
+                if(debug)
+                    printf("--> cX: %d, cY: %f slope: %f \n", cX, cY, slope);
             }
             
             
@@ -289,6 +295,24 @@ int main (int argc, const char* argv[])
 
     cvSetMouseCallback(windowName,&onMouse, 0 );
 
+
+    /* Begin: Simulate some smudging */
+    dragging = TRUE;
+    applySmudge(285, 195);
+    applySmudge(296, 191);
+    debug = TRUE;
+    applySmudge(349, 174);
+    debug = FALSE;
+    applySmudge(385, 163);
+    applySmudge(445, 149);
+    applySmudge(454, 146);
+    applySmudge(454, 146);
+    dragging = FALSE;
+    smudgeBuffer.clear();
+    screenBuffer = cvCloneImage(img);
+    /* End: Simulate some smudging */
+    
+    
     // Re-render our image ~ every 10ms
     while(TRUE) {
         cvShowImage(windowName, screenBuffer);
