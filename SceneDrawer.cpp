@@ -370,7 +370,7 @@ inline void ProcessRealWorldImage(
  * using cvErode. Returns the pointer to the newly allocated
  * user pixels.
  */
-XnLabel* SmoothenUserPixels(
+inline XnLabel* SmoothenUserPixels(
 		const TextureData &sceneTextureData,
 		const XnLabel* pLabels)
 {
@@ -409,7 +409,7 @@ XnLabel* SmoothenUserPixels(
 	srcImage->imageData = (char*) srcImageData;
 
 	// Do the erosion, 2 iterations (more iterations -> more erosion)
-	cvErode(srcImage, targetImage, erodeKernel, 2);
+	cvErode(srcImage, targetImage, erodeKernel, 1);
 
 	/* Debug output
 	cvShowImage("source image", srcImage);
@@ -429,11 +429,44 @@ XnLabel* SmoothenUserPixels(
 	return pTargetLabels;
 }
 
+// Check the kernel sized maskSize*maskSize around point p for green
+// color. If the green amount is high enough (>65%) true is returned.
+static bool checkKernelForRed(
+		const XnLabel* labels,
+		const TextureData& texData,
+		XnPoint3D p,
+		short maskSize)
+{
+	unsigned char* img = texData.data;
+	int red = 0, other = 1;
+
+	for(int i=-(maskSize/2); i < maskSize/2; i++) {
+		for(int j=-(maskSize/2); j < maskSize/2; j++) {
+			int yoffset = texData.width*3*((int)p.Y+i);
+
+			if((int)p.X+j < texData.width && (int)p.Y+i < texData.height
+				&& labels[yoffset + (int)p.X+j])
+			{
+				unsigned char *current = &img[yoffset + ((int)p.X+j) * 3];
+				other += current[0] + current[1] + current[2];
+				red += current[0];
+			}
+		}
+	}
+
+	/*
+	printf("%d, %d => %lf (%d)\n", red, other, (double)red/other * 100,
+			(double)red/other * 100 > 40);
+	*/
+
+	return (double)red/other * 100 > 60;
+}
 
 inline void DrawPlayer(
 		const TextureData& sceneTextureData,
 		const xn::SceneMetaData& smd,
-		const xn::ImageMetaData& imd, XnUserID player)
+		const xn::ImageMetaData& imd,
+		XnUserID player)
 {
 	static bool bInitialized = false;
 	static XnUInt8* pRealWorldImage;
@@ -477,7 +510,7 @@ inline void DrawPlayer(
 			{
 				XnLabel label = *pLabels;
 
-				if(label != 0) {
+				if(label) {
 					// Player detected, use player image
 					int offset = nY * nImdXRes * 3 + nX * 3;
 
@@ -494,6 +527,8 @@ inline void DrawPlayer(
 		}
 	}
 
+
+
 	glBindTexture(GL_TEXTURE_2D, depthTexID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0,
 				GL_RGB, GL_UNSIGNED_BYTE, pDepthTexBuf);
@@ -501,11 +536,48 @@ inline void DrawPlayer(
 	// Display the OpenGL texture map
 	glColor4f(1,1,1,1);
 
+
 	glEnable(GL_TEXTURE_2D);
 	DrawTexture(nXRes,nYRes,0,0);
 	glDisable(GL_TEXTURE_2D);
 
 	DrawUserLabels(player);
+
+	// Sponge detection
+	{
+		XnSkeletonJointPosition rightHandJoint, leftHandJoint;
+
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_LEFT_HAND, leftHandJoint);
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_RIGHT_HAND, rightHandJoint);
+
+		if(rightHandJoint.fConfidence >= 0.5 && leftHandJoint.fConfidence >= 0.5) {
+			XnPoint3D points[2] = {leftHandJoint.position, rightHandJoint.position};
+			char positionString[25];
+			bool isRedLeft = false, isRedRight = false;
+
+			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
+
+			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15);
+			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15);
+
+			sprintf(positionString,
+					"Handposition: %d/%d, red=%d",
+					(int)points[1].X, (int)points[1].Y, isRedRight);
+
+			glColor4f(1,1,1,1);
+			glRasterPos2i(points[1].X, points[1].Y);
+			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+
+			sprintf(positionString,
+					"Handposition: %d/%d, red=%d",
+					(int)points[0].X, (int)points[0].Y, isRedLeft);
+
+			glRasterPos2i(points[0].X, points[0].Y);
+			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+		}
+	}
 
 	// Draw skeleton of user
 	if (player != 0)
@@ -539,118 +611,3 @@ void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 }
 
 
-
-/* SceneDrawer definitions
- *
- * The scene drawer's Update method is called each frame.
- * The rendering process is started from there.
- */
-
-SceneDrawer::SceneDrawer(XnUInt32 nHistory) :
-	m_nHistorySize(nHistory)
-{
-	m_pfPositionBuffer = new XnFloat[nHistory*3];
-}
-
-
-// Destructor. Clear all data structures
-SceneDrawer::~SceneDrawer()
-{
-	std::map<XnUInt32, std::list<XnPoint3D> >::iterator iter;
-	for (iter = m_History.begin(); iter != m_History.end(); ++iter)
-	{
-		iter->second.clear();
-	}
-	m_History.clear();
-
-	delete []m_pfPositionBuffer;
-}
-
-
-void SceneDrawer::Update(XnVMessage* pMessage) {
-	// PointControl's Update calls all callbacks for each hand
-	XnVPointControl::Update(pMessage);
-
-	DrawHands();
-}
-
-
-void SceneDrawer::OnPointCreate(const XnVHandPointContext* cxt)
-{
-	// Create entry for the hand
-	m_History[cxt->nID].clear();
-	OnPointUpdate(cxt);
-}
-
-
-// Handle new position of an existing hand
-void SceneDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
-{
-	// positions are kept in projective coordinates, since they are only used for drawing
-	XnPoint3D ptProjective(cxt->ptPosition);
-
-	g_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
-
-	// Add new position to the history buffer
-	m_History[cxt->nID].push_front(ptProjective);
-
-	// Keep size of history buffer
-	if (m_History[cxt->nID].size() > m_nHistorySize)
-		m_History[cxt->nID].pop_back();
-}
-
-
-// Handle destruction of an existing hand
-void SceneDrawer::OnPointDestroy(XnUInt32 nID)
-{
-	// No need for the history buffer
-	m_History.erase(nID);
-}
-
-
-void SceneDrawer::DrawHands() const {
-	std::map<XnUInt32, std::list<XnPoint3D> >::const_iterator PointIterator;
-
-	// Go over each existing hand
-	for (PointIterator = m_History.begin();
-		PointIterator != m_History.end();
-		++PointIterator)
-	{
-		// Clear buffer
-		XnUInt32 nPoints = 0;
-		XnUInt32 i = 0;
-		XnUInt32 Id = PointIterator->first;
-
-		// Go over all previous positions of current hand
-		std::list<XnPoint3D>::const_iterator PositionIterator;
-		for (PositionIterator = PointIterator->second.begin();
-			PositionIterator != PointIterator->second.end();
-			++PositionIterator, ++i)
-		{
-			// Add position to buffer
-			XnPoint3D pt(*PositionIterator);
-			m_pfPositionBuffer[3*i] = pt.X;
-			m_pfPositionBuffer[3*i + 1] = pt.Y;
-			m_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
-		}
-
-		// Set color
-		XnUInt32 nColor = Id % nColors;
-		XnUInt32 nSingle = GetPrimaryID();
-		if (Id == GetPrimaryID())
-			nColor = 6;
-		// Draw buffer:
-		glColor4f(Colors[nColor][0],
-				Colors[nColor][1],
-				Colors[nColor][2],
-				1.0f);
-		glPointSize(2);
-		glVertexPointer(3, GL_FLOAT, 0, m_pfPositionBuffer);
-		glDrawArrays(GL_LINE_STRIP, 0, i);
-
-
-		glPointSize(8);
-		glDrawArrays(GL_POINTS, 0, 1);
-		glFlush();
-	}
-}

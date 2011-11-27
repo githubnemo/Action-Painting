@@ -16,15 +16,15 @@
 #include <XnVHandPointContext.h>
 
 #include <highgui.h> // Debug
+#include <unistd.h>  // access(2)
 
 xn::Context g_Context;
 xn::ScriptNode g_ScriptNode;
 xn::DepthGenerator g_DepthGenerator;
 xn::ImageGenerator g_ImageGenerator;
 xn::UserGenerator g_UserGenerator;
-xn::HandsGenerator g_HandsGenerator;
 xn::GestureGenerator g_GestureGenerator;
-xn::Recorder* g_pRecorder;
+xn::SkeletonCapability* g_SkeletonCap;
 
 // NITE specifics
 XnVSessionManager* g_pSessionManager;
@@ -50,13 +50,13 @@ static EGLContext context = EGL_NO_CONTEXT;
 #define GL_WIN_SIZE_X 960
 #define GL_WIN_SIZE_Y 720
 
-
 XnBool g_bPause = false;
 XnBool g_bRecord = false;
 XnBool g_bQuit = false;
 
 
 #define SAMPLE_XML_PATH "./Data/Sample-Players.xml"
+#define CALIBRATION_PATH "./Data/calibration.dat"
 
 #define CHECK_RC(rc, what)											\
 	if (rc != XN_STATUS_OK)											\
@@ -88,20 +88,37 @@ XnBool AssignPlayer(XnUserID user)
 
 	XnPoint3D com;
 	g_UserGenerator.GetCoM(user, com);
+
+/*	printf("%lf == 0?\n", com.Z);
 	if (com.Z == 0)
 		return FALSE;
+		*/
 
 	printf("Matching for existing calibration\n");
-	g_UserGenerator.GetSkeletonCap().LoadCalibrationData(user, 0);
-	g_UserGenerator.GetSkeletonCap().StartTracking(user);
+	g_SkeletonCap->LoadCalibrationData(user, 0);
+	g_SkeletonCap->StartTracking(user);
 	g_nPlayer = user;
-	return TRUE;
 
+	return TRUE;
 }
 
 
 void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
+	if(access(CALIBRATION_PATH, R_OK) == 0) {
+		// Load calibration data from file
+		XnStatus s;
+
+		s = g_SkeletonCap->LoadCalibrationDataFromFile(user, CALIBRATION_PATH);
+
+		if(s == XN_STATUS_OK) {
+			g_SkeletonCap->StartTracking(user);
+			g_bCalibrated = TRUE;
+		}
+
+		xnPrintError(s, "NewUser Load from file");
+	}
+
 	if (!g_bCalibrated) // check on player0 is enough
 	{
 		printf("Look for pose\n");
@@ -173,9 +190,11 @@ void XN_CALLBACK_TYPE CalibrationEnded(xn::SkeletonCapability& skeleton,
 	{
 		if (!g_bCalibrated)
 		{
-			g_UserGenerator.GetSkeletonCap().SaveCalibrationData(user, 0);
+			g_SkeletonCap->SaveCalibrationData(user, 0);
+			g_SkeletonCap->SaveCalibrationDataToFile(user, CALIBRATION_PATH);
+
 			g_nPlayer = user;
-			g_UserGenerator.GetSkeletonCap().StartTracking(user);
+			g_SkeletonCap->StartTracking(user);
 			g_bCalibrated = TRUE;
 		}
 
@@ -198,7 +217,9 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton,
 	{
 		if (!g_bCalibrated)
 		{
-			g_UserGenerator.GetSkeletonCap().SaveCalibrationData(user, 0);
+			g_SkeletonCap->SaveCalibrationData(user, 0);
+			g_SkeletonCap->SaveCalibrationDataToFile(user, CALIBRATION_PATH);
+
 			g_nPlayer = user;
 			g_UserGenerator.GetSkeletonCap().StartTracking(user);
 			g_bCalibrated = TRUE;
@@ -237,22 +258,20 @@ void glutDisplay (void)
 		// Read next available data
 		g_Context.WaitOneUpdateAll(g_DepthGenerator);
 
-		g_pSessionManager->Update(&g_Context);
-
 		{
 			xn::SceneMetaData sceneMD;
 			xn::DepthMetaData depthMD;
 			xn::ImageMetaData imageMD;
 
 			g_DepthGenerator.GetMetaData(depthMD);
-			g_UserGenerator.GetUserPixels(0, sceneMD);
+			g_UserGenerator.GetUserPixels(g_nPlayer, sceneMD);
 			g_ImageGenerator.GetMetaData(imageMD);
 
 			DrawScene(depthMD, sceneMD, imageMD, g_nPlayer);
 		}
-
 	}
 
+	/*
 	if (g_nPlayer != 0)
 	{
 		XnPoint3D com;
@@ -263,6 +282,7 @@ void glutDisplay (void)
 			FindPlayer();
 		}
 	}
+	*/
 
 	#ifdef USE_GLUT
 	glutSwapBuffers();
@@ -369,8 +389,6 @@ int main(int argc, char **argv)
 	CHECK_RC(rc, "Find user generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_IMAGE, g_ImageGenerator);
 	CHECK_RC(rc, "Find image generator");
-	rc = g_Context.FindExistingNode(XN_NODE_TYPE_HANDS, g_HandsGenerator);
-	CHECK_RC(rc, "Find hands generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_GESTURE, g_GestureGenerator);
 	CHECK_RC(rc, "Find gesture generator");
 
@@ -382,7 +400,9 @@ int main(int argc, char **argv)
 		return XN_STATUS_ERROR;
 	}
 
-	g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
+	g_SkeletonCap = new xn::SkeletonCapability(g_UserGenerator.GetSkeletonCap());
+	g_SkeletonCap->SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
+
 
 	// Orientate the depth screen at the real world image so there's
 	// no offset if we project the user's image to the depth map.
@@ -423,23 +443,6 @@ int main(int argc, char **argv)
 	rc = g_UserGenerator.GetPoseDetectionCap().RegisterToPoseDetected(
 			PoseDetected, NULL, hPoseCBs);
 	CHECK_RC(rc, "Register to pose detected");
-
-
-	// Give me more points, hand generator!
-	g_HandsGenerator.SetSmoothing(0.1);
-
-
-	// Setup hand tracking mechanism and drawing class
-	g_pSessionManager = new XnVSessionManager;
-	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
-	CHECK_RC(rc, "SessionManager::Initialize");
-
-	SceneDrawer* sceneDrawer = new SceneDrawer(20);
-
-	g_pFlowRouter = new XnVFlowRouter;
-	g_pFlowRouter->SetActive(sceneDrawer);
-
-	g_pSessionManager->AddListener(g_pFlowRouter);
 
 
 	// Fire up all generators
