@@ -429,6 +429,38 @@ inline XnLabel* SmoothenUserPixels(
 	return pTargetLabels;
 }
 
+// Check the kernel sized maskSize*maskSize around point p for green
+// color. If the green amount is high enough (>65%) true is returned.
+static bool checkKernelForRed(
+		const XnLabel* labels,
+		const TextureData& texData,
+		XnPoint3D p,
+		short maskSize)
+{
+	unsigned char* img = texData.data;
+	int red = 0, other = 1;
+
+	for(int i=-(maskSize/2); i < maskSize/2; i++) {
+		for(int j=-(maskSize/2); j < maskSize/2; j++) {
+			int yoffset = texData.width*3*((int)p.Y+i);
+
+			if((int)p.X+j < texData.width && (int)p.Y+i < texData.height
+				&& labels[yoffset + (int)p.X+j])
+			{
+				unsigned char *current = &img[yoffset + ((int)p.X+j) * 3];
+				other += current[0] + current[1] + current[2];
+				red += current[0];
+			}
+		}
+	}
+
+	/*
+	printf("%d, %d => %lf (%d)\n", red, other, (double)red/other * 100,
+			(double)red/other * 100 > 40);
+	*/
+
+	return (double)red/other * 100 > 60;
+}
 
 inline void DrawPlayer(
 		const TextureData& sceneTextureData,
@@ -495,6 +527,8 @@ inline void DrawPlayer(
 		}
 	}
 
+
+
 	glBindTexture(GL_TEXTURE_2D, depthTexID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0,
 				GL_RGB, GL_UNSIGNED_BYTE, pDepthTexBuf);
@@ -502,11 +536,48 @@ inline void DrawPlayer(
 	// Display the OpenGL texture map
 	glColor4f(1,1,1,1);
 
+
 	glEnable(GL_TEXTURE_2D);
 	DrawTexture(nXRes,nYRes,0,0);
 	glDisable(GL_TEXTURE_2D);
 
 	DrawUserLabels(player);
+
+	// Sponge detection
+	{
+		XnSkeletonJointPosition rightHandJoint, leftHandJoint;
+
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_LEFT_HAND, leftHandJoint);
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_RIGHT_HAND, rightHandJoint);
+
+		if(rightHandJoint.fConfidence >= 0.5 && leftHandJoint.fConfidence >= 0.5) {
+			XnPoint3D points[2] = {leftHandJoint.position, rightHandJoint.position};
+			char positionString[25];
+			bool isRedLeft = false, isRedRight = false;
+
+			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
+
+			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15);
+			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15);
+
+			sprintf(positionString,
+					"Handposition: %d/%d, red=%d",
+					(int)points[1].X, (int)points[1].Y, isRedRight);
+
+			glColor4f(1,1,1,1);
+			glRasterPos2i(points[1].X, points[1].Y);
+			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+
+			sprintf(positionString,
+					"Handposition: %d/%d, red=%d",
+					(int)points[0].X, (int)points[0].Y, isRedLeft);
+
+			glRasterPos2i(points[0].X, points[0].Y);
+			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+		}
+	}
 
 	// Draw skeleton of user
 	if (player != 0)
