@@ -95,8 +95,8 @@ XnBool AssignPlayer(XnUserID user)
 		*/
 
 	printf("Matching for existing calibration\n");
-	g_UserGenerator.GetSkeletonCap().LoadCalibrationData(user, 0);
-	g_UserGenerator.GetSkeletonCap().StartTracking(user);
+	g_SkeletonCap->LoadCalibrationData(user, 0);
+	g_SkeletonCap->StartTracking(user);
 	g_nPlayer = user;
 
 	return TRUE;
