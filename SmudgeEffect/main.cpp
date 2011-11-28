@@ -65,6 +65,10 @@ Brush currentBrush;
 
 void drawCursor(int x, int y)
 {
+    if(screenBuffer != NULL) {
+        cvReleaseImage(&screenBuffer);
+    }
+    
     //Get clean copy of image
     screenBuffer = cvCloneImage(img);
 
