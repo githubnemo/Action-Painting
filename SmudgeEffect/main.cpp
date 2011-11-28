@@ -11,6 +11,9 @@
 #include <cv.h>
 #include <highgui.h>
 
+#include "smudge_util.h"
+#include "Brush.h"
+
 
 
 bool debug = FALSE;
@@ -19,6 +22,9 @@ bool debug = FALSE;
 IplImage* img;
 IplImage* screenBuffer;
 bool dragging = FALSE;
+
+
+
 
 
 // Algorithm parameters
@@ -33,6 +39,8 @@ int brushMaskBorder = 10;   // Border of $value pixels around the brush mask
 int brushDistance = 1;      // Defines how often we draw the brush, in this case
                             // we draw it whenever abs(cursor - lastCursor) > brushDistance
 
+int brushSoftness = 1;
+
 int smudgeBufferSize = 4;
 
 // Algorithm specific variables
@@ -43,18 +51,7 @@ int lastY = -1;
 double lastLeftOverDistance = 0;
 
 
-// Adds the first point onto the second point, with an alpha value (0-255)
-// Assumes that the CvScalars have 3 "channels"
-CvScalar addWithAlpha(CvScalar addThis, CvScalar ontoThis, double alpha) {
-    double invertedAlphaPercentage = alpha / 255;
-    double alphaPercentage = 1 - invertedAlphaPercentage;
-    
-    double d0 = ontoThis.val[0] * invertedAlphaPercentage + addThis.val[0] * alphaPercentage;
-    double d1 = ontoThis.val[1] * invertedAlphaPercentage + addThis.val[1] * alphaPercentage;
-    double d2 = ontoThis.val[2] * invertedAlphaPercentage + addThis.val[2] * alphaPercentage;
-    
-    return cvScalar(d0, d1, d2);
-}
+
 
 
 /*
@@ -287,15 +284,21 @@ void onMouse( int event, int x, int y, int flags, void* param )
 
 int main (int argc, const char* argv[])
 {
+    
+    Brush brush;
+    
 
+    
+    
     const char* windowName = "Smudge Demo";
 
     cvNamedWindow(windowName, CV_WINDOW_AUTOSIZE);
-    cvNamedWindow("BrushMask", CV_WINDOW_AUTOSIZE);
+    //cvNamedWindow("BrushMask", CV_WINDOW_AUTOSIZE);
 
     // Some sliders to modify the algorithm values
     cvCreateTrackbar("Brush Size", windowName, &brushRadius, 20);
     cvCreateTrackbar("Brush Pressure", windowName, &brushPressure, 100);
+    cvCreateTrackbar("Brush Softness", windowName, &brushSoftness, 100);
 
     // Create our initial image, which we will smudge
     img = cvCreateImage(cvSize(640, 480), 8, 3);
@@ -309,12 +312,16 @@ int main (int argc, const char* argv[])
     cvSetMouseCallback(windowName, &onMouse, 0);
     
     printf("Brush radius: %d \n", brushRadius);
-    createBrushMask(brushRadius, brushMaskBorder);
+    //createBrushMask(brushRadius, brushMaskBorder);
     
+    cvShowImage(windowName, img);
     
-    cvShowImage(windowName, screenBuffer);
+    //cvShowImage(windowName, screenBuffer);
     while(TRUE) {
-        cvWaitKey(1000);
+        brush.setRadius(brushRadius);
+        brush.setSoftness(brushSoftness / 100.0);
+        brush.createImageShape();
+        cvWaitKey(10);
     }
 
     return 0;
