@@ -56,13 +56,6 @@ Brush currentBrush;
 
 
 
-
-
-
-
-
-
-
 void drawCursor(int x, int y)
 {
     if(screenBuffer != NULL) {
