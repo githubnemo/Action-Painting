@@ -430,12 +430,13 @@ inline XnLabel* SmoothenUserPixels(
 }
 
 // Check the kernel sized maskSize*maskSize around point p for green
-// color. If the green amount is high enough (>65%) true is returned.
+// color. If the red amount is high enough (>minPercent) true is returned.
 static bool checkKernelForRed(
 		const XnLabel* labels,
 		const TextureData& texData,
 		XnPoint3D p,
-		short maskSize)
+		short maskSize,
+		short minPercent)
 {
 	unsigned char* img = texData.data;
 	int red = 0, other = 1;
@@ -459,7 +460,7 @@ static bool checkKernelForRed(
 			(double)red/other * 100 > 40);
 	*/
 
-	return (double)red/other * 100 > 60;
+	return (double)red/other * 100 > minPercent;
 }
 
 inline void DrawPlayer(
@@ -559,21 +560,15 @@ inline void DrawPlayer(
 
 			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
 
-			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15);
-			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15);
+			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15, 60);
+			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15, 60);
 
-			sprintf(positionString,
-					"Handposition: %d/%d, red=%d",
-					(int)points[1].X, (int)points[1].Y, isRedRight);
-
+			sprintf(positionString, "red=%d", isRedRight);
 			glColor4f(1,1,1,1);
 			glRasterPos2i(points[1].X, points[1].Y);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 
-			sprintf(positionString,
-					"Handposition: %d/%d, red=%d",
-					(int)points[0].X, (int)points[0].Y, isRedLeft);
-
+			sprintf(positionString, "red=%d", isRedLeft);
 			glRasterPos2i(points[0].X, points[0].Y);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 		}
