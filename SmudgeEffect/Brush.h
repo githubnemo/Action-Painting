@@ -12,7 +12,7 @@
 #include <cv.h>
 #include <highgui.h>
 
-#define IS_INVALID_POINT(cvPoint) cvPoint.x == -1 && cvPoint.y == -1 
+#define IS_INVALID_POINT(cvPoint) (cvPoint.x == -1 && cvPoint.y == -1)
 
 class Brush {
     
@@ -20,10 +20,12 @@ class Brush {
     double mRadius;
     CvScalar mColor;
     double mSoftness;
+    double mPressure;
     bool mHard;
     
     // Algorithm stuff
     CvPoint mLastPoint;
+    CvPoint mLastRenderPosition;
     double mLeftOverDistance;
     
     // Brush mask

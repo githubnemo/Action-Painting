@@ -21,4 +21,6 @@ void stampMaskAt(const IplImage* mask, IplImage* image, IplImage* alphaMask, dou
 
 double lineStampMask(Brush* brush, IplImage* image, CvPoint startPoint, CvPoint endPoint, double leftOverDistance);
 
+IplImage* cvCopySubImage(IplImage* src, int x, int y, int width, int height);
+
 #endif

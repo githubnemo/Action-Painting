@@ -39,7 +39,7 @@ int brushMaskBorder = 10;   // Border of $value pixels around the brush mask
 int brushDistance = 1;      // Defines how often we draw the brush, in this case
                             // we draw it whenever abs(cursor - lastCursor) > brushDistance
 
-int brushSoftness = 1;
+int brushSoftness = 50;
 
 int smudgeBufferSize = 4;
 
@@ -74,26 +74,6 @@ void drawCursor(int x, int y)
 
     //Draw a circle where is the mouse
 	cvCircle(screenBuffer, cvPoint(x,y), brushRadius, color, 1, CV_AA, 0);
-}
-
-IplImage* cvCopySubImage(IplImage* src, int x, int y, int width, int height)
-{
-    IplImage* dst;
-
-    // Set the region of intereset to the portion we want to extract
-    cvSetImageROI(src, cvRect(x, y, width, height));
-
-    // Create our destination image
-    dst = cvCreateImage( cvSize(width, height), src->depth, src->nChannels );
-
-    // Copy the region of interest to our destination image
-    cvCopy(src, dst);
-
-    // We want to reset the region of interest here, or it will persist
-    // even after we leave this function
-    cvResetImageROI(src);
-
-    return dst;
 }
 
 

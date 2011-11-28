@@ -22,9 +22,11 @@ Brush::Brush() {
     
     mRadius = 10.0;
     mSoftness = 0.5;
+    mPressure = 0.5;
     mHard = false;
     
     mLastPoint = cvPoint(-1, -1);
+    mLastRenderPosition = cvPoint(-1, -1);
     mLeftOverDistance = 0.0;    
     
     cvNamedWindow("BrushTest", CV_WINDOW_AUTOSIZE);
@@ -59,6 +61,7 @@ void Brush::createImageShape()
     // radius and the outer, transparent radius.
     double alphaStep = 1.0 / (outerRadius - innerRadius + 1);
     double alpha = 255 - (alphaStep * 255);
+    //alpha = alpha * mPressure;
     
     for(i = outerRadius; i >= innerRadius; --i) {
         IplImage* temp = cvCreateImage(imageSize, 8, 1);
@@ -97,7 +100,7 @@ void Brush::createImageShape()
     cvReleaseImage(&fg);
     cvReleaseImage(&img);
     
-    cvShowImage("BrushTest", mBrushMask);
+    
 }
 
 
@@ -121,68 +124,48 @@ void Brush::paint(IplImage* canvas, CvPoint point)
 void Brush::resetState()
 {
     mLastPoint = cvPoint(-1, -1);
+    mLastRenderPosition = cvPoint(-1, -1);
     mLeftOverDistance = 0.0;
+    
 }
 
 double Brush::spacing()
 {
     // Set the spacing between the stamps. 1/10th of the brush width is a good value.
-    return mBrushMask->width * 0.1;
+    return 1;
 }
 
 // Draw a single stamp on the given coordinates
 void Brush::stampMaskAt(IplImage* image, double x, double y)
 {
-    IplImage* mask = mForeground;
-    IplImage* alphaMask = mBrushMask;
-    
-    int drawX = (int) (x - (mask->width / 2.0));
-    int drawY = (int) (y - (mask->height / 2.0));
-    
-    // These are the coordinates in the mask-image where we start drawing.
-    // They come into play when part of the image to be drawn lies outside 
-    // of the actual canvas.
-    int startX = 0,
-    startY = 0,
-    stopX = mask->width,
-    stopY = mask->height;
-    
-    
-    // Out of bounds checking for the upper and left edges
-    if(drawX < 0) {
-        startX = abs(drawX);
-        drawX = 0;
+    if(!IS_INVALID_POINT(mLastRenderPosition)) {
+        int maskSize = mBrushMask->width;
+        CvRect lastRoi = cvRect(mLastRenderPosition.x - (maskSize * 0.5), mLastRenderPosition.y - (maskSize * 0.5), maskSize, maskSize);
+        CvRect currentRoi = cvRect(x - (maskSize * 0.5), y - (maskSize * 0.5), maskSize, maskSize);
+        
+        // Get the image from where our cursor was last
+        IplImage* last = cvCopySubImage(image, lastRoi.x, lastRoi.y, maskSize, maskSize);
+        
+        // Create a targetSection image as large as the brush mask, and copy
+        // our current ROI (where our cursor currently lies) into it.
+        // We can't "overlayImageWithAlphaMask" directly on the passed image,
+        // because mentioned function expects both images to be of the same
+        // size
+        cvSetImageROI(image, currentRoi);
+        IplImage* targetSection = cvCreateImage(cvSize(maskSize, maskSize), image->depth, image->nChannels);
+        cvCopy(image, targetSection);
+        
+        // Do the actual "stamping"
+        overlayImageWithAlphaMask(last, targetSection, mBrushMask);
+        
+        // Copy processed ROI back to the canvas
+        cvCopy(targetSection, image);
+        
+        cvResetImageROI(image);
+        cvReleaseImage(&targetSection);
+        cvReleaseImage(&last);
     }
     
-    if(drawY < 0) {
-        startY = abs(drawY);
-        drawY = 0;
-    }
-    
-    
-    // Same here, out of bounds checking for the right and lower edges
-    int temp = image->width -(drawX + stopX);
-    if(temp < 0) {
-        stopX += temp;
-    }
-    
-    temp = image->height - (drawY + stopY);
-    if(temp < 0) {
-        stopY += temp;
-    }
-    
-    
-    // And finally the "stamping"
-    for(int yy = startY; yy < stopY; yy++) {
-        for(int xx = startX; xx < stopX; xx++) {
-            CvScalar newPoint = cvGet2D(mask, yy, xx);
-            CvScalar currentPoint = cvGet2D(image, drawY + yy, drawX + xx);
-            CvScalar alphaPoint = cvGet2D(alphaMask, yy, xx);
-            
-            CvScalar newPointWithAlpha = addWithAlpha(newPoint, currentPoint, alphaPoint.val[0]);
-            
-            cvSet2D(image, drawY + yy, drawX + xx, newPointWithAlpha);
-        }
-    }
+    mLastRenderPosition = cvPoint(x, y);
 }
 

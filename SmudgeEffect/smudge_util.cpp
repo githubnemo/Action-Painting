@@ -43,6 +43,7 @@ void overlayImageWithAlpha(const IplImage* source, IplImage* target, double alph
 void overlayImageWithAlphaMask(const IplImage* source, IplImage* target, const IplImage* alphaMask)
 {
     assert(source->width == target->width && source->height == target->height);
+    
     for(int y=0; y<source->height; y++) {
         for(int x=0; x<source->width; x++) {
             CvScalar sourcePoint = cvGet2D(source, y, x);
@@ -54,6 +55,27 @@ void overlayImageWithAlphaMask(const IplImage* source, IplImage* target, const I
             cvSet2D(target, y, x, result);
         }
     }
+}
+
+
+IplImage* cvCopySubImage(IplImage* src, int x, int y, int width, int height)
+{
+    IplImage* dst;
+    
+    // Set the region of intereset to the portion we want to extract
+    cvSetImageROI(src, cvRect(x, y, width, height));
+    
+    // Create our destination image
+    dst = cvCreateImage( cvSize(width, height), src->depth, src->nChannels );
+    
+    // Copy the region of interest to our destination image
+    cvCopy(src, dst);
+    
+    // We want to reset the region of interest here, or it will persist
+    // even after we leave this function
+    cvResetImageROI(src);
+    
+    return dst;
 }
 
 
