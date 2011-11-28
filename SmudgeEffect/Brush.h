@@ -39,6 +39,9 @@ public:
     void paint(IplImage* canvas, CvPoint point);
     void resetState();
     
+    void stampMaskAt(IplImage* image, double x, double y);
+    double spacing();
+    
     // Setters
     void setRadius(double radius) { assert(radius > 0); mRadius = radius; }
     void setSoftness(double softness) { assert(softness >= 0 && softness <= 1); mSoftness = softness; }

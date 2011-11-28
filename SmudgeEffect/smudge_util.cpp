@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cv.h>
 
+#include "Brush.h"
 #include "smudge_util.h"
 
 // Adds the first point onto the second point, with an alpha value (0-255)
@@ -62,66 +63,10 @@ void overlayImageWithAlphaMask(const IplImage* source, IplImage* target, const I
  */
 
 
-// Draw the passed IplImage centered on the given coordinates
-void stampMaskAt(const IplImage* mask, IplImage* image, IplImage* alphaMask, double x, double y)
-{
-    int drawX = (int) (x - (mask->width / 2.0));
-    int drawY = (int) (y - (mask->height / 2.0));
-    
-    // These are the coordinates in the mask-image where we start drawing.
-    // They come into play when part of the image to be drawn lies outside 
-    // of the actual canvas.
-    int startX = 0,
-    startY = 0,
-    stopX = mask->width,
-    stopY = mask->height;
-    
-    
-    // Out of bounds checking for the upper and left edges
-    if(drawX < 0) {
-        startX = abs(drawX);
-        drawX = 0;
-    }
-    
-    if(drawY < 0) {
-        startY = abs(drawY);
-        drawY = 0;
-    }
-    
-    
-    // Same here, out of bounds checking for the right and lower edges
-    int temp = image->width -(drawX + stopX);
-    if(temp < 0) {
-        stopX += temp;
-    }
-    
-    temp = image->height - (drawY + stopY);
-    if(temp < 0) {
-        stopY += temp;
-    }
-    
-    
-    // And finally the "stamping"
-    for(int yy = startY; yy < stopY; yy++) {
-        for(int xx = startX; xx < stopX; xx++) {
-            CvScalar newPoint = cvGet2D(mask, yy, xx);
-            CvScalar currentPoint = cvGet2D(image, drawY + yy, drawX + xx);
-            CvScalar alphaPoint = cvGet2D(alphaMask, yy, xx);
-            
-            CvScalar newPointWithAlpha = addWithAlpha(newPoint, currentPoint, alphaPoint.val[0]);
-            
-            cvSet2D(image, drawY + yy, drawX + xx, newPointWithAlpha);
-        }
-    }
-}
-
-
 // Draw a line with the given mask
-double lineStampMask(const IplImage* mask, IplImage* image, IplImage* alphaMask, CvPoint startPoint, CvPoint endPoint, double leftOverDistance)
+double lineStampMask(Brush* brush, IplImage* image, CvPoint startPoint, CvPoint endPoint, double leftOverDistance)
 {
-    
-    // Set the spacing between the stamps. 1/10th of the brush width is a good value.
-    double spacing = mask->width * 0.1;
+    double spacing = brush->spacing();
     
     // Anything less that half a pixel is overkill and could hurt performance.
     if(spacing < 0.5) {
@@ -169,8 +114,8 @@ double lineStampMask(const IplImage* mask, IplImage* image, IplImage* alphaMask,
             offsetX += stepX * spacing;
             offsetY += stepY * spacing;
         }
-        
-        stampMaskAt(mask, image, alphaMask, startPoint.x + offsetX, startPoint.y + offsetY);
+
+        brush->stampMaskAt(image, startPoint.x + offsetX, startPoint.y + offsetY);
         
         // Remove the distance we just covered
         totalDistance -= spacing;

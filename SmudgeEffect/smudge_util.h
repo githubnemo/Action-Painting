@@ -9,6 +9,8 @@
 #ifndef ActionPainting_smudge_util_h
 #define ActionPainting_smudge_util_h
 
+#include "Brush.h"
+
 CvScalar addWithAlpha(CvScalar addThis, CvScalar ontoThis, double alpha);
 
 void overlayImageWithAlpha(const IplImage* source, IplImage* target, double alpha);
@@ -17,6 +19,6 @@ void overlayImageWithAlphaMask(const IplImage* source, IplImage* target, const I
 
 void stampMaskAt(const IplImage* mask, IplImage* image, IplImage* alphaMask, double x, double y);
 
-double lineStampMask(const IplImage* mask, IplImage* image, IplImage* alphaMask, CvPoint startPoint, CvPoint endPoint, double leftOverDistance);
+double lineStampMask(Brush* brush, IplImage* image, CvPoint startPoint, CvPoint endPoint, double leftOverDistance);
 
 #endif
