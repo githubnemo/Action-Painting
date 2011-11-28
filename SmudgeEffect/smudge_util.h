@@ -15,4 +15,8 @@ void overlayImageWithAlpha(const IplImage* source, IplImage* target, double alph
 
 void overlayImageWithAlphaMask(const IplImage* source, IplImage* target, const IplImage* alphaMask);
 
+void stampMaskAt(const IplImage* mask, IplImage* image, IplImage* alphaMask, double x, double y);
+
+double lineStampMask(const IplImage* mask, IplImage* image, IplImage* alphaMask, CvPoint startPoint, CvPoint endPoint, double leftOverDistance);
+
 #endif

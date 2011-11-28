@@ -52,140 +52,11 @@ double lastLeftOverDistance = 0;
 
 
 
-
-
-/*
- * Begin: Stuff according to
- * http://losingfight.com/blog/2007/08/18/how-to-implement-a-basic-bitmap-brush/
- */
-
-
-// Draw the passed IplImage centered on the given coordinates
-void stampMaskAt(const IplImage* mask, IplImage* image, double x, double y)
-{
-    int drawX = (int) (x - (mask->width / 2.0));
-    int drawY = (int) (y - (mask->height / 2.0));
-    
-    // These are the coordinates in the mask-image where we start drawing.
-    // They come into play when part of the image to be drawn lies outside 
-    // of the actual canvas.
-    int startX = 0,
-        startY = 0,
-        stopX = mask->width,
-        stopY = mask->height;
-    
-    
-    // Out of bounds checking for the upper and left edges
-    if(drawX < 0) {
-        startX = abs(drawX);
-        drawX = 0;
-    }
-    
-    if(drawY < 0) {
-        startY = abs(drawY);
-        drawY = 0;
-    }
-    
-    
-    // Same here, out of bounds checking for the right and lower edges
-    int temp = image->width -(drawX + stopX);
-    if(temp < 0) {
-        stopX += temp;
-    }
-    
-    temp = image->height - (drawY + stopY);
-    if(temp < 0) {
-        stopY += temp;
-    }
-    
-    
-    // And finally the "stamping"
-    for(int yy = startY; yy < stopY; yy++) {
-        for(int xx = startX; xx < stopX; xx++) {
-            CvScalar newPoint = cvGet2D(mask, yy, xx);
-            CvScalar currentPoint = cvGet2D(image, drawY + yy, drawX + xx);
-            CvScalar alphaPoint = cvGet2D(brushMask, yy, xx);
-            
-            CvScalar newPointWithAlpha = addWithAlpha(newPoint, currentPoint, alphaPoint.val[0]);
-            
-            cvSet2D(image, drawY + yy, drawX + xx, newPointWithAlpha);
-        }
-    }
-}
-
-
-// Draw a line with the given mask
-double lineStampMask(const IplImage* mask, IplImage* image, CvPoint startPoint, CvPoint endPoint, double leftOverDistance) {
-    
-    // Set the spacing between the stamps. 1/10th of the brush width is a good value.
-    double spacing = mask->width * 0.1;
-    
-    // Anything less that half a pixel is overkill and could hurt performance.
-    if(spacing < 0.5) {
-        spacing = 0.5;
-    }
-    
-    // Determine the delta of the x and y. This will determine the slope
-    // of the line we want to draw.
-    double deltaX = endPoint.x - startPoint.x;
-    double deltaY = endPoint.y - startPoint.y;
-    
-    // Normalize the delta vector we just computed, and that becomes our step increment
-    // for drawing our line, since the distance of a normalized vector is always 1
-    double distance = sqrt( deltaX * deltaX + deltaY * deltaY );
-    double stepX = 0.0;
-    double stepY = 0.0;
-    if( distance > 0.0 ) {
-        double invertDistance = 1.0 / distance;
-        stepX = deltaX * invertDistance;
-        stepY = deltaY * invertDistance;
-    }
-    
-    double offsetX = 0.0;
-    double offsetY = 0.0;
-    
-    // We're careful to only stamp at the specified interval, so its possible
-    // that we have the last part of the previous line left to draw. Be sure
-    // to add that into the total distance we have to draw.
-    double totalDistance = leftOverDistance + distance;
-    
-    // While we still have distance to cover, stamp
-    while ( totalDistance >= spacing ) {
-        // Increment where we put the stamp
-        if ( leftOverDistance > 0 ) {
-            // If we're making up distance we didn't cover the last
-            //	time we drew a line, take that into account when calculating
-            //	the offset. leftOverDistance is always < spacing.
-            offsetX += stepX * (spacing - leftOverDistance);
-            offsetY += stepY * (spacing - leftOverDistance);
-            
-            leftOverDistance -= spacing;
-        } else {
-            // The normal case. The offset increment is the normalized vector
-            //	times the spacing
-            offsetX += stepX * spacing;
-            offsetY += stepY * spacing;
-        }
-        
-        stampMaskAt(mask, image, startPoint.x + offsetX, startPoint.y + offsetY);
-        
-        // Remove the distance we just covered
-        totalDistance -= spacing;
-    }
-    
-    // Return the distance that we didn't get to cover when drawing the line.
-    //	It is going to be less than spacing.
-    return totalDistance;
-}
+Brush currentBrush;
 
 
 
 
-
-/*
- * End: Stuff according to
- * http://losingfight.com/blog/2007/08/18/how-to-implement-a-basic-bitmap-brush/
- */
 
 
 
@@ -230,7 +101,7 @@ IplImage* cvCopySubImage(IplImage* src, int x, int y, int width, int height)
 
 
 
-void createBrushMask(int brushRadius, int brushMaskBorder)
+/*void createBrushMask(int brushRadius, int brushMaskBorder)
 {
     int imageSize = (brushRadius * 2) + (brushMaskBorder * 2);
 
@@ -253,7 +124,7 @@ void createBrushMask(int brushRadius, int brushMaskBorder)
     cvCopy(tempBrushMask, brushMask);
 
     cvShowImage("BrushMask", brushMask);
-}
+}*/
 
 
 
@@ -265,15 +136,17 @@ void onMouse( int event, int x, int y, int flags, void* param )
     
     
     if(dragging && lastX >= 0 && lastY >= 0) {
-        CvPoint startPoint = cvPoint(lastX, lastY);
-        CvPoint endPoint = cvPoint(x, y);
-        lastLeftOverDistance = lineStampMask(brushMask, img, startPoint, endPoint, lastLeftOverDistance);
+        currentBrush.setRadius(brushRadius);
+        currentBrush.setSoftness(brushSoftness / 100.0);
+        currentBrush.createImageShape();
+        currentBrush.paint(img, cvPoint(x, y));
     }
 
 	if(event==CV_EVENT_LBUTTONDOWN) {
         dragging = TRUE;
     } else if(event==CV_EVENT_LBUTTONUP) {
         dragging = FALSE;
+        currentBrush.resetState();
     }
     
     lastX = x;
@@ -283,13 +156,7 @@ void onMouse( int event, int x, int y, int flags, void* param )
 }
 
 int main (int argc, const char* argv[])
-{
-    
-    Brush brush;
-    
-
-    
-    
+{    
     const char* windowName = "Smudge Demo";
 
     cvNamedWindow(windowName, CV_WINDOW_AUTOSIZE);
@@ -318,10 +185,7 @@ int main (int argc, const char* argv[])
     
     //cvShowImage(windowName, screenBuffer);
     while(TRUE) {
-        brush.setRadius(brushRadius);
-        brush.setSoftness(brushSoftness / 100.0);
-        brush.createImageShape();
-        cvWaitKey(10);
+        cvWaitKey(1000);
     }
 
     return 0;

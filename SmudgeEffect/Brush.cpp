@@ -15,21 +15,23 @@ using namespace std;
 
 
 Brush::Brush() {
-    brushMask = NULL;
+    mBrushMask = NULL;
+    mForeground = NULL;
     
     mColor = CV_RGB(0, 0, 255);
+    
     mRadius = 10.0;
     mSoftness = 0.5;
     mHard = false;
     
-    mLastPoint = cvPoint(1, 1);
+    mLastPoint = cvPoint(-1, -1);
     mLeftOverDistance = 0.0;    
     
     cvNamedWindow("BrushTest", CV_WINDOW_AUTOSIZE);
 }
 
-void Brush::createImageShape() {
-    
+void Brush::createImageShape()
+{    
     // 3 times because the width of the generated brush is 2 times the radius,
     // plus we need to leave a border of 1 times the border radius so that 
     // OpenCV's "cvCircle" function correctly antialiases the drawn circle
@@ -77,20 +79,47 @@ void Brush::createImageShape() {
         
     }
     
-    if(brushMask != NULL) {
-        cvReleaseImage(&brushMask);
+    if(mBrushMask != NULL) {
+        cvReleaseImage(&mBrushMask);
     }
     
-    brushMask = cvCreateImage(cvSize(mRadius * 2 + 1 , mRadius * 2 +1), 8, 1);
+    if(mForeground != NULL) {
+        cvReleaseImage(&mForeground);
+    }
+    
+    mBrushMask = cvCreateImage(cvSize(mRadius * 2 + 1 , mRadius * 2 +1), 8, 1);
     cvSetImageROI(img, cvRect(mRadius / 2, mRadius / 2, mRadius * 2+ 1, mRadius * 2 +1));
-    cvCopy(img, brushMask);
+    cvCopy(img, mBrushMask);
+    
+    mForeground = cvCreateImage(cvSize(mRadius * 2 + 1 , mRadius * 2 +1), 8, 3);
+    cvSet(mForeground, mColor);
     
     cvReleaseImage(&fg);
     cvReleaseImage(&img);
     
-    cvShowImage("BrushTest", brushMask);
-    
-    
+    cvShowImage("BrushTest", mBrushMask);
 }
 
 
+void Brush::paint(IplImage* canvas, CvPoint point)
+{
+    
+    CvPoint startPoint;
+    if(IS_INVALID_POINT(mLastPoint)) {
+        startPoint = point;
+    } else {
+        startPoint = mLastPoint;
+    }
+    
+    mLeftOverDistance = lineStampMask(mForeground, canvas, mBrushMask, startPoint, point, mLeftOverDistance);
+    
+    
+    mLastPoint = point;
+}
+
+
+void Brush::resetState()
+{
+    mLastPoint = cvPoint(-1, -1);
+    mLeftOverDistance = 0.0;
+}

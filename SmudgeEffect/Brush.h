@@ -27,13 +27,17 @@ class Brush {
     double mLeftOverDistance;
     
     // Brush mask
-    IplImage * brushMask;
+    IplImage* mBrushMask;
+    
+    // Foreground
+    IplImage* mForeground;
     
 public:
     Brush();
     
     void createImageShape();
-    
+    void paint(IplImage* canvas, CvPoint point);
+    void resetState();
     
     // Setters
     void setRadius(double radius) { assert(radius > 0); mRadius = radius; }
