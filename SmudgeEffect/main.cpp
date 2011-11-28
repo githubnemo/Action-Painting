@@ -97,35 +97,6 @@ IplImage* cvCopySubImage(IplImage* src, int x, int y, int width, int height)
 }
 
 
-
-/*void createBrushMask(int brushRadius, int brushMaskBorder)
-{
-    int imageSize = (brushRadius * 2) + (brushMaskBorder * 2);
-
-    IplImage * tempBrushMask = cvCreateImage(cvSize(imageSize , imageSize), 8, 1);
-    cvSet(tempBrushMask, cvScalar(255));
-    
-    brushMask = cvCreateImage(cvSize(brushRadius*2, brushRadius*2), 8, 1);
-
-    cvCircle(
-        tempBrushMask,
-        cvPoint(brushRadius+brushMaskBorder, brushRadius+brushMaskBorder),
-        brushRadius,
-        CV_RGB(0, 0, 0),
-        CV_FILLED,
-        CV_AA,
-        0
-    );
-
-    cvSetImageROI(tempBrushMask, cvRect(brushMaskBorder, brushMaskBorder, brushRadius*2, brushRadius*2));
-    cvCopy(tempBrushMask, brushMask);
-
-    cvShowImage("BrushMask", brushMask);
-}*/
-
-
-
-
 void onMouse( int event, int x, int y, int flags, void* param )
 {
     
