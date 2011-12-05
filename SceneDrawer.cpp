@@ -363,18 +363,6 @@ inline void ProcessRealWorldImage(
 		const XnUInt8* source,
 		XnUInt8* target)
 {
-#if 0 // Uncomment if something useful is to happen here
-	XnUInt16 nXRes = sceneTextureData.XRes;
-	XnUInt16 nYRes = sceneTextureData.YRes;
-	int texWidth = sceneTextureData.width;
-
-	for(int nY=0; nY < nYRes; nY++) {
-		for(int nX=0; nX < nXRes; nX++) {
-			target += 3;
-		}
-	}
-#endif
-
 	static bool initialized=false;
 	static IplImage* srcImage;
 	static IplImage* targetImage;
