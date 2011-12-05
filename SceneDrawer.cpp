@@ -40,6 +40,9 @@
 #include <cv.h>
 #include <highgui.h>
 
+#include "SmudgeEffect/smudge_util.h"
+#include "SmudgeEffect/Brush.h"
+
 extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
