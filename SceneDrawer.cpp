@@ -48,6 +48,12 @@ extern XnUserID g_nPlayer;
 IplImage* g_pBgImg;
 GLfloat g_pfTexCoords[8];
 
+// Swipe detection ಠ_ಠ
+// g_nHistorySize is the amount of points to capture
+std::list<XnPoint3D> g_History;
+XnFloat* g_pfPositionBuffer;
+int g_nHistorySize = 15;
+
 
 struct TextureData {
 	unsigned char*	data;
@@ -463,6 +469,28 @@ static bool checkKernelForRed(
 	return (double)red/other * 100 > minPercent;
 }
 
+
+
+// Return true if buffer has reached size limit
+static bool CaptureHandMovement(XnUserID player, XnPoint3D projectivePoint) {
+	// Add new position to the history buffer
+	g_History.push_front(projectivePoint);
+
+	// Keep size of history buffer
+	if (g_History.size() > g_nHistorySize) {
+		g_History.pop_back();
+		return true;
+	}
+	return false;
+}
+
+static bool DetectSwipe(int LineSize, XnPoint3D* points)
+{
+	// TODO
+	return false;
+}
+
+
 inline void DrawPlayer(
 		const TextureData& sceneTextureData,
 		const xn::SceneMetaData& smd,
@@ -571,6 +599,42 @@ inline void DrawPlayer(
 			sprintf(positionString, "red=%d", isRedLeft);
 			glRasterPos2i(points[0].X, points[0].Y);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+
+			// Swipe detection to change background
+			{
+				bool enoughPoints = CaptureHandMovement(player, points[1]);
+
+				if(enoughPoints) {
+					XnUInt32 nPoints = 0;
+					XnUInt32 i = 0;
+
+					// Go over all previous positions of current hand
+					std::list<XnPoint3D>::const_iterator PositionIterator;
+					for (PositionIterator = g_History.begin();
+						PositionIterator != g_History.end();
+						++PositionIterator, ++i)
+					{
+						// Add position to buffer
+						XnPoint3D pt(*PositionIterator);
+						g_pfPositionBuffer[3*i + 0] = pt.X;
+						g_pfPositionBuffer[3*i + 1] = pt.Y;
+						g_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
+					}
+
+					// Set color
+					// Draw buffer:
+					glColor4f(1,1,1,1);
+					glPointSize(2);
+					glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
+					glDrawArrays(GL_LINE_STRIP, 0, i);
+
+					glPointSize(8);
+					glDrawArrays(GL_POINTS, 0, 1);
+					glFlush();
+
+					//g_History.clear();
+				}
+			}
 		}
 	}
 
@@ -596,6 +660,8 @@ void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 		g_pfTexCoords[1] = sceneTextureData.YPos,
 		g_pfTexCoords[2] = sceneTextureData.XPos,
 		g_pfTexCoords[7] = sceneTextureData.YPos;
+
+		g_pfPositionBuffer = new XnFloat[g_nHistorySize*3];
 
 		bInitialized = true;
 	}
