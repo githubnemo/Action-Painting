@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A03397EF1483887600984D05 /* smudge_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A03397EE1483887600984D05 /* smudge_util.cpp */; };
+		A0794AAD14836F0A00217572 /* Brush.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0794AAC14836F0A00217572 /* Brush.cpp */; };
 		A0D74B341471045D000C0D85 /* effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0A6856E14710319003B498E /* effect.cpp */; };
 		A0F441E0147130BB00210B19 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0F441DF147130BB00210B19 /* main.cpp */; };
 /* End PBXBuildFile section */
@@ -33,6 +35,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A03397ED1483872B00984D05 /* smudge_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = smudge_util.h; sourceTree = "<group>"; };
+		A03397EE1483887600984D05 /* smudge_util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = smudge_util.cpp; sourceTree = "<group>"; };
+		A0794AAC14836F0A00217572 /* Brush.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Brush.cpp; sourceTree = "<group>"; };
+		A0794AAF1483720F00217572 /* Brush.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Brush.h; sourceTree = "<group>"; };
 		A0A6854D14710319003B498E /* effect */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = effect; sourceTree = "<group>"; };
 		A0A6854E14710319003B498E /* effect.dSYM */ = {isa = PBXFileReference; lastKnownFileType = wrapper.dsym; path = effect.dSYM; sourceTree = "<group>"; };
 		A0A6855014710319003B498E /* background.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = background.jpg; sourceTree = "<group>"; };
@@ -223,6 +229,10 @@
 			isa = PBXGroup;
 			children = (
 				A0F441DF147130BB00210B19 /* main.cpp */,
+				A0794AAC14836F0A00217572 /* Brush.cpp */,
+				A0794AAF1483720F00217572 /* Brush.h */,
+				A03397ED1483872B00984D05 /* smudge_util.h */,
+				A03397EE1483887600984D05 /* smudge_util.cpp */,
 			);
 			path = SmudgeEffect;
 			sourceTree = "<group>";
@@ -304,6 +314,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A0F441E0147130BB00210B19 /* main.cpp in Sources */,
+				A0794AAD14836F0A00217572 /* Brush.cpp in Sources */,
+				A03397EF1483887600984D05 /* smudge_util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -416,6 +428,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -454,6 +467,7 @@
 				A0F441E4147130BB00210B19 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
