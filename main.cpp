@@ -410,6 +410,11 @@ int main(int argc, char **argv)
 		return XN_STATUS_ERROR;
 	}
 
+	if(g_backgroundImages.empty()) {
+		puts("No background images loaded!");
+		return XN_STATUS_ERROR;
+	}
+
 	printf("Loaded background images:\n");
 	for(std::list<std::string>::const_iterator i = g_backgroundImages.begin();
 		i != g_backgroundImages.end();
