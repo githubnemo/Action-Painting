@@ -15,6 +15,9 @@
 #include <XnVPointControl.h>
 #include <XnVHandPointContext.h>
 
+#include <iostream>
+#include <fstream>	// open background images config
+
 #include <highgui.h> // Debug
 #include <unistd.h>  // access(2)
 
@@ -32,6 +35,9 @@ XnVFlowRouter* g_pFlowRouter;
 
 XnUserID g_nPlayer = 0;
 XnBool g_bCalibrated = FALSE;
+
+std::list<std::string> g_backgroundImages;
+
 
 #ifdef USE_GLUT
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
@@ -57,6 +63,8 @@ XnBool g_bQuit = false;
 
 #define SAMPLE_XML_PATH "./Data/Sample-Players.xml"
 #define CALIBRATION_PATH "./Data/calibration.dat"
+#define IMAGES_CFG_PATH	"./Data/backgrounds.cfg"
+
 
 #define CHECK_RC(rc, what)											\
 	if (rc != XN_STATUS_OK)											\
@@ -374,8 +382,43 @@ void XN_CALLBACK_TYPE GestureProgressHandler(
 }
 
 
+bool loadBackgroundImagePaths(const char* path) {
+	std::string line;
+	std::ifstream myfile(path);
+
+	if (myfile.is_open())
+	{
+		while ( myfile.good() )
+		{
+			std::getline (myfile,line);
+			if(line.empty()) continue;
+			g_backgroundImages.push_front(line);
+		}
+		myfile.close();
+		return true;
+	} else {
+		printf("Could not open file %s.\n", path);
+		return false;
+	}
+}
+
+
 int main(int argc, char **argv)
 {
+	if(!loadBackgroundImagePaths(IMAGES_CFG_PATH)) {
+		printf("Failed to load image paths "IMAGES_CFG_PATH"\n");
+		return XN_STATUS_ERROR;
+	}
+
+	printf("Loaded background images:\n");
+	for(std::list<std::string>::const_iterator i = g_backgroundImages.begin();
+		i != g_backgroundImages.end();
+		i++)
+	{
+		// TODO check if file exists
+		puts((*i).c_str());
+	}
+
 	XnStatus rc = XN_STATUS_OK;
 	xn::EnumerationErrors errors;
 
