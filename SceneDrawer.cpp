@@ -52,6 +52,27 @@ IplImage* g_pBgImg;
 GLfloat g_pfTexCoords[8];
 
 
+// Smudge Algorithm parameters
+int brushRadius = 10;       // Radius of the brush
+
+int brushPressure = 100;    // Brush pressure goes from 0.0 to 1.0, so this is
+// divided by 100 eventually.
+
+int brushMaskBorder = 10;   // Border of $value pixels around the brush mask
+// to allow correct anti alias of the drawn mask.
+
+int brushDistance = 1;      // Defines how often we draw the brush, in this case
+// we draw it whenever abs(cursor - lastCursor) > brushDistance
+
+int brushSoftness = 50;
+
+int smudgeBufferSize = 4;
+
+Brush currentBrush;
+
+
+
+
 struct TextureData {
 	unsigned char*	data;
 	int 			width;
@@ -465,6 +486,64 @@ static bool checkKernelForRed(
 	return (double)red/other * 100 > 60;
 }
 
+
+
+inline void SmudgeAtPosition(
+                             const TextureData& sceneTextureData,
+                             const int x,
+                             const int y)
+{
+    static bool initialized=false;
+	static IplImage* srcImage;
+	static IplImage* targetImage;
+
+    static cv::Mat* imageMat;
+    static cv::Mat* targetImageMat;
+
+    XnUInt16 nXRes = sceneTextureData.XRes;
+	XnUInt16 nYRes = sceneTextureData.YRes;
+
+    currentBrush.setRadius(brushRadius);
+    currentBrush.setSoftness(brushSoftness / 100.0);
+    currentBrush.createImageShape();
+
+
+    if(!initialized) {
+		//srcImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
+		//targetImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
+
+        srcImage = getBackgroundImage();
+
+        //int depth = srcImage->depth;
+        //int channels = srcImage->nChannels;
+
+        //targetImage = cvCreateImage(cvSize(nXRes, nYRes), depth, channels);
+
+        //srcImage->imageData = (char*) sceneTextureData.data;
+        //imageMat = new cv::Mat(srcImage);
+
+        //targetImage->imageData = (char*) sceneTextureData.data;
+        //targetImageMat = new cv::Mat(targetImage);
+
+		initialized = true;
+
+        //cv::medianBlur(*imageMat, *targetImageMat, 11);
+
+
+        //cvReleaseImage(&g_pBgImg);
+        //g_pBgImg = targetImage;
+	} else {
+        currentBrush.paint(srcImage, cvPoint(x, y));
+    }
+
+
+
+
+
+}
+
+
+
 inline void DrawPlayer(
 		const TextureData& sceneTextureData,
 		const xn::SceneMetaData& smd,
@@ -579,7 +658,11 @@ inline void DrawPlayer(
 
 			glRasterPos2i(points[0].X, points[0].Y);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+
+            SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y);
 		}
+
+
 	}
 
 	// Draw skeleton of user
