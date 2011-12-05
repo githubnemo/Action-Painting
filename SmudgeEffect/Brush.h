@@ -10,7 +10,7 @@
 #define ActionPainting_Brush_h
 
 #include <cv.h>
-#include <highgui.h>
+//#include <highgui.h>
 
 #define IS_INVALID_POINT(cvPoint) (cvPoint.x == -1 && cvPoint.y == -1)
 
