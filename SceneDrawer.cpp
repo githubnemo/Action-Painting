@@ -500,31 +500,30 @@ inline void DrawPlayer(
 	static bool bInitialized = false;
 	static XnUInt8* pRealWorldImage;
 	static XnLabel* pLabels;
+	static TextureData playerTextureData;
 
 	if(!bInitialized) {
 		pRealWorldImage = new XnUInt8[smd.XRes()*smd.YRes()*3];
+
+		// Create RGBA texture for player image
+		initTexture(&playerTextureData, sceneTextureData.XRes, sceneTextureData.YRes);
+
 		bInitialized = true;
 	}
 
 	XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
 
-	unsigned char* pDepthTexBuf = sceneTextureData.data;
-	GLuint depthTexID = sceneTextureData.id;
+	unsigned char* pPlayerTexBuf = playerTextureData.data;
 
-	int texWidth = sceneTextureData.width;
-	int texHeight = sceneTextureData.height;
-
-	float texXpos = sceneTextureData.XPos;
-	float texYpos = sceneTextureData.YPos;
-
-	unsigned char* pDestImage = pDepthTexBuf;
+	unsigned char* pDestImage = pPlayerTexBuf;
 	const XnLabel* pOrgLabels = smd.Data();
 
 	{
 		// Real world image data
 		const XnUInt8* pImage = imd.Data();
 		unsigned int nImdXRes = imd.XRes();
+		int texWidth = sceneTextureData.width;
 
 		memcpy(pRealWorldImage, pImage, imd.XRes()*imd.YRes()*3);
 
@@ -558,6 +557,19 @@ inline void DrawPlayer(
 
 
 
+	glBindTexture(GL_TEXTURE_2D, sceneTextureData.id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, sceneTextureData.width,
+		sceneTextureData.height, 0,	GL_RGB, GL_UNSIGNED_BYTE,
+		sceneTextureData.data);
+
+	// Display the OpenGL texture map
+	glColor4f(1,1,1,1);
+
+	glEnable(GL_TEXTURE_2D);
+	DrawTexture(nXRes,nYRes,0,0);
+	glDisable(GL_TEXTURE_2D);
+
+	/*
 	glBindTexture(GL_TEXTURE_2D, depthTexID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0,
 				GL_RGB, GL_UNSIGNED_BYTE, pDepthTexBuf);
@@ -565,10 +577,10 @@ inline void DrawPlayer(
 	// Display the OpenGL texture map
 	glColor4f(1,1,1,1);
 
-
 	glEnable(GL_TEXTURE_2D);
 	DrawTexture(nXRes,nYRes,0,0);
 	glDisable(GL_TEXTURE_2D);
+	*/
 
 	DrawUserLabels(player);
 
