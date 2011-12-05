@@ -47,6 +47,7 @@ extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
 extern XnUserID g_nPlayer;
+extern std::list<std::string> g_backgroundImages;
 
 IplImage* g_pBgImg;
 GLfloat g_pfTexCoords[8];
@@ -228,8 +229,8 @@ IplImage* getBackgroundImage() {
 }
 
 
-void initBackgroundImage(int width, int height) {
-	IplImage* img = cvLoadImage("Data/1.jpg");
+void setBackgroundImage(const char* path, int width, int height) {
+	IplImage* img = cvLoadImage(path);
 
 	int depth = img->depth;
 	int channels = img->nChannels;
@@ -302,7 +303,11 @@ inline void DrawBackground(TextureData& sceneTextureData)
 	int nYRes = sceneTextureData.YRes;
 
 	if(!bInitialized) {
-		initBackgroundImage(nXRes, nYRes);
+		// Take first image in list
+		const char* path = (*g_backgroundImages.begin()).c_str();
+
+		setBackgroundImage(path, nXRes, nYRes);
+
 		bInitialized = true;
 	}
 
