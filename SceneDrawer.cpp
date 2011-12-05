@@ -475,6 +475,7 @@ static bool checkKernelForRed(
 		for(int j=-(maskSize/2); j < maskSize/2; j++) {
 			int yoffset = texData.width*3*((int)p.Y+i);
 
+			// FIXME bounds
 			if((int)p.X+j < texData.width && (int)p.Y+i < texData.height
 				&& labels[yoffset + (int)p.X+j])
 			{
@@ -508,10 +509,63 @@ static bool CaptureHandMovement(XnUserID player, XnPoint3D projectivePoint) {
 	return false;
 }
 
-static bool DetectSwipe(int LineSize, XnPoint3D* points)
+static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLeft)
 {
-	// TODO
-	return false;
+    int MinXDelta = 300; // required horizontal distance
+    int MaxYDelta = 100; // max mount of vertical variation
+
+    float x1 = (*(points.begin())).X;
+    float y1 = (*(points.begin())).Y;
+    float x2 = (*(points.end())).X;
+    float y2 = (*(points.end())).Y;
+
+#if 0
+	cout << "x1: " << x1 << endl;
+	cout << "y1: " << y1 << endl;
+	cout << "x2: " << x2 << endl;
+	cout << "y2: " << y2 << endl;
+#endif
+
+    if (abs(x1 - x2) < MinXDelta)
+        return false;
+
+    if (y1 - y2 > MaxYDelta)
+        return false;
+
+    //for (int i = 1; i < LineSize - 2; i++)
+	std::list<XnPoint3D>::const_iterator PositionIterator;
+
+	for(PositionIterator = ++(points.begin());
+		PositionIterator != points.end();
+		PositionIterator++)
+    {
+		XnPoint3D point(*PositionIterator);
+
+        if (abs((point.Y - y1)) > MaxYDelta)
+            return false;
+		continue;
+        float result =
+            (y2 - y1) * point.X +
+            (x2 - x1) * point.Y +
+            (x1 * y2 - x2 * y1);
+
+		//cout << "result: " << result << endl;
+
+		// This should be probably the other way around.
+		// result > |result| is never true. Negative values
+		// (the only way for result to be different than |result|)
+		// are never greater than a positive value.
+        if (result < abs(result))
+        {
+            return false;
+        }
+    }
+
+	if(fromLeft != NULL) {
+		*fromLeft = (x1 < x2);
+	}
+
+    return true;
 }
 
 
@@ -693,7 +747,16 @@ inline void DrawPlayer(
 
 					// Set color
 					// Draw buffer:
-					glColor4f(1,1,1,1);
+					bool fromLeft = false;
+					bool swiped = DetectSwipe(g_nHistorySize, g_History, &fromLeft);
+
+					if(swiped) {
+						glColor4f(0.5,0.5,1,1);
+					} else {
+						glColor4f(1,1,1,1);
+					}
+
+
 					glPointSize(2);
 					glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
 					glDrawArrays(GL_LINE_STRIP, 0, i);
