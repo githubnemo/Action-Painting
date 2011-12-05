@@ -29,7 +29,7 @@ Brush::Brush() {
     mLastRenderPosition = cvPoint(-1, -1);
     mLeftOverDistance = 0.0;    
     
-    cvNamedWindow("BrushTest", CV_WINDOW_AUTOSIZE);
+    //cvNamedWindow("BrushTest", CV_WINDOW_AUTOSIZE);
 }
 
 void Brush::createImageShape()
