@@ -574,13 +574,9 @@ inline void DrawPlayer(
 	static bool bInitialized = false;
 	static XnUInt8* pRealWorldImage;
 	static XnLabel* pLabels;
-	static TextureData playerTextureData;
 
 	if(!bInitialized) {
 		pRealWorldImage = new XnUInt8[smd.XRes()*smd.YRes()*3];
-
-		// Create RGBA texture for player image
-		initTexture(&playerTextureData, sceneTextureData.XRes, sceneTextureData.YRes);
 
 		bInitialized = true;
 	}
@@ -588,9 +584,9 @@ inline void DrawPlayer(
 	XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
 
-	unsigned char* pPlayerTexBuf = playerTextureData.data;
+	unsigned char* pTexBuf = sceneTextureData.data;
 
-	unsigned char* pDestImage = pPlayerTexBuf;
+	unsigned char* pDestImage = pTexBuf;
 	const XnLabel* pOrgLabels = smd.Data();
 
 	{
@@ -643,18 +639,6 @@ inline void DrawPlayer(
 	DrawTexture(nXRes,nYRes,0,0);
 	glDisable(GL_TEXTURE_2D);
 
-	/*
-	glBindTexture(GL_TEXTURE_2D, depthTexID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0,
-				GL_RGB, GL_UNSIGNED_BYTE, pDepthTexBuf);
-
-	// Display the OpenGL texture map
-	glColor4f(1,1,1,1);
-
-	glEnable(GL_TEXTURE_2D);
-	DrawTexture(nXRes,nYRes,0,0);
-	glDisable(GL_TEXTURE_2D);
-	*/
 
 	DrawUserLabels(player);
 
