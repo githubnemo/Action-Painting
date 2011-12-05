@@ -114,7 +114,7 @@ void Brush::paint(IplImage* canvas, CvPoint point)
         startPoint = mLastPoint;
     }
 
-    printf("x: %d, y: %d \n", point.x, point.y);
+    //printf("x: %d, y: %d \n", point.x, point.y);
 
     if(
        point.x > mRadius &&
@@ -122,7 +122,7 @@ void Brush::paint(IplImage* canvas, CvPoint point)
        point.y > mRadius &&
        point.y < (canvas->height - mRadius)
     ) {
-        printf("here\n");
+        //printf("here\n");
         mLeftOverDistance = lineStampMask(this, canvas, startPoint, point, mLeftOverDistance);
         mLastPoint = point;
     }
