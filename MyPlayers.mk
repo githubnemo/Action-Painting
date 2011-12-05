@@ -32,10 +32,15 @@ endif
 
 include ../NiteSampleMakefile
 
+nullstring :=
+space := $(nullstring)
 OUTPUT_DIR = $(shell dirname $(OUTPUT_FILE))
 DATA_FOLDER = $(OUTPUT_DIR)/Data
-DATA_FILES = background.jpg \
-			 Sample-Players.xml
+DATA_FILES = 1.jpg \
+			 2.jpg \
+			 3.jpg \
+			 Sample-Players.xml \
+			 backgrounds.cfg
 
 DATA = $(addprefix $(DATA_FOLDER)/,$(DATA_FILES))
 

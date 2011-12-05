@@ -229,7 +229,7 @@ IplImage* getBackgroundImage() {
 
 
 void initBackgroundImage(int width, int height) {
-	IplImage* img = cvLoadImage("Data/background.jpg");
+	IplImage* img = cvLoadImage("Data/1.jpg");
 
 	int depth = img->depth;
 	int channels = img->nChannels;
