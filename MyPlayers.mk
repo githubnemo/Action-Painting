@@ -2,9 +2,12 @@ OSTYPE := $(shell uname -s)
 
 SRC_FILES = \
 	main.cpp \
-	SceneDrawer.cpp
+	SceneDrawer.cpp \
+	SmudgeEffect/Brush.cpp \
+	SmudgeEffect/smudge_util.cpp
 
 INC_DIRS += ../../../../../Samples/MyPlayers
+INC_DIRS += ../../../../../Samples/MyPlayers/SmudgeEffect
 
 EXE_NAME = Sample-MyPlayers
 

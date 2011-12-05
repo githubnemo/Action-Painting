@@ -29,7 +29,7 @@ Brush::Brush() {
     mLastRenderPosition = cvPoint(-1, -1);
     mLeftOverDistance = 0.0;    
     
-    cvNamedWindow("BrushTest", CV_WINDOW_AUTOSIZE);
+    //cvNamedWindow("BrushTest", CV_WINDOW_AUTOSIZE);
 }
 
 void Brush::createImageShape()
@@ -76,48 +76,60 @@ void Brush::createImageShape()
                  CV_AA,
                  0
         );
-        
+
         overlayImageWithAlphaMask(fg, img, temp);
         cvReleaseImage(&temp);
-        
+
     }
-    
+
     if(mBrushMask != NULL) {
         cvReleaseImage(&mBrushMask);
     }
-    
+
     if(mForeground != NULL) {
         cvReleaseImage(&mForeground);
     }
-    
+
     mBrushMask = cvCreateImage(cvSize(mRadius * 2 + 1 , mRadius * 2 +1), 8, 1);
     cvSetImageROI(img, cvRect(mRadius / 2, mRadius / 2, mRadius * 2+ 1, mRadius * 2 +1));
     cvCopy(img, mBrushMask);
-    
+
     mForeground = cvCreateImage(cvSize(mRadius * 2 + 1 , mRadius * 2 +1), 8, 3);
     cvSet(mForeground, mColor);
-    
+
     cvReleaseImage(&fg);
     cvReleaseImage(&img);
-    
-    
+
+
 }
 
 
 void Brush::paint(IplImage* canvas, CvPoint point)
 {
-    
+
     CvPoint startPoint;
     if(IS_INVALID_POINT(mLastPoint)) {
         startPoint = point;
     } else {
         startPoint = mLastPoint;
     }
-    
-    mLeftOverDistance = lineStampMask(this, canvas, startPoint, point, mLeftOverDistance);
-    
-    
-    mLastPoint = point;
+
+    printf("x: %d, y: %d \n", point.x, point.y);
+
+    if(
+       point.x > mRadius &&
+       point.x < (canvas->width - mRadius) &&
+       point.y > mRadius &&
+       point.y < (canvas->height - mRadius)
+    ) {
+        printf("here\n");
+        mLeftOverDistance = lineStampMask(this, canvas, startPoint, point, mLeftOverDistance);
+        mLastPoint = point;
+    }
+
+
+
+
 }
 
 
