@@ -384,6 +384,7 @@ inline void ProcessRealWorldImage(
 	targetImage->imageData = (char*) target;
 	cv::Mat targetImageMat(targetImage);
 
+    //cv::medianBlur(imageMat, targetImageMat, 11);
 
 	//cvShowImage("image display", targetImage);
 }
