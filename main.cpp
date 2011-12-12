@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fstream>	// open background images config
 
+#include <cv.h>		 // Loading background images
 #include <highgui.h> // Debug
 #include <unistd.h>  // access(2)
 
@@ -36,7 +37,7 @@ XnVFlowRouter* g_pFlowRouter;
 XnUserID g_nPlayer = 0;
 XnBool g_bCalibrated = FALSE;
 
-std::list<std::string> g_backgroundImages;
+std::list<IplImage*> g_backgroundImages;
 
 
 #ifdef USE_GLUT
@@ -382,17 +383,43 @@ void XN_CALLBACK_TYPE GestureProgressHandler(
 }
 
 
-bool loadBackgroundImagePaths(const char* path) {
+bool loadBackgroundImages(const char* path) {
 	std::string line;
 	std::ifstream myfile(path);
+
+	const int width = 640;
+	const int height = 480;
 
 	if (myfile.is_open())
 	{
 		while ( myfile.good() )
 		{
 			std::getline (myfile,line);
-			if(line.empty()) continue;
-			g_backgroundImages.push_front(line);
+
+			if(line.empty())
+				continue;
+
+			IplImage* img = cvLoadImage(line.c_str());
+
+			if(img == NULL) {
+				printf("Failed to load image '%s'.\n", line.c_str());
+				continue;
+			}
+
+			// Resize background to width x height
+			{
+				int depth = img->depth;
+				int channels = img->nChannels;
+				IplImage* resizedImage = cvCreateImage(
+						cv::Size(width,height), depth, channels);
+
+				cvResize(img, resizedImage, CV_INTER_LINEAR);
+
+				cvReleaseImage(&img);
+				img = resizedImage;
+			}
+
+			g_backgroundImages.push_front(img);
 		}
 		myfile.close();
 		return true;
@@ -405,7 +432,7 @@ bool loadBackgroundImagePaths(const char* path) {
 
 int main(int argc, char **argv)
 {
-	if(!loadBackgroundImagePaths(IMAGES_CFG_PATH)) {
+	if(!loadBackgroundImages(IMAGES_CFG_PATH)) {
 		printf("Failed to load image paths "IMAGES_CFG_PATH"\n");
 		return XN_STATUS_ERROR;
 	}
@@ -413,15 +440,6 @@ int main(int argc, char **argv)
 	if(g_backgroundImages.empty()) {
 		puts("No background images loaded!");
 		return XN_STATUS_ERROR;
-	}
-
-	printf("Loaded background images:\n");
-	for(std::list<std::string>::const_iterator i = g_backgroundImages.begin();
-		i != g_backgroundImages.end();
-		i++)
-	{
-		// TODO check if file exists
-		puts((*i).c_str());
 	}
 
 	XnStatus rc = XN_STATUS_OK;

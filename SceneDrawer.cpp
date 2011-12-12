@@ -47,8 +47,13 @@ extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
 extern XnUserID g_nPlayer;
-extern std::list<std::string> g_backgroundImages;
+extern std::list<IplImage*> g_backgroundImages;
 
+// g_currentBackgroundImage is only a position indicator which background
+// image is currently active.
+//
+// g_pBgImg holds the address of the active background image.
+std::list<IplImage*>::const_iterator g_currentBackgroundImage;
 IplImage* g_pBgImg;
 GLfloat g_pfTexCoords[8];
 
@@ -57,7 +62,14 @@ GLfloat g_pfTexCoords[8];
 std::list<XnPoint3D> g_History;
 XnFloat* g_pfPositionBuffer;
 int g_nHistorySize = 15;
-
+// See DetectSwipe for details of the following 2 variables
+int g_swipeMinYDelta = 100;
+int g_swipeMinXDelta = 250;
+// swipe to right: image fades from left (fadeDirection = -1)
+// swipte to left: image fades from right (fadeDirection = 1)
+int g_fadeDirection = 0; // -1 from left, 0 none, +1 from right
+int g_fadeXPosition = 0; // Value of left/right edge of new image
+int g_fadeStep = 50;	 // How many pixels fade per step
 
 // Smudge Algorithm parameters
 int brushRadius = 10;       // Radius of the brush
@@ -229,17 +241,8 @@ IplImage* getBackgroundImage() {
 }
 
 
-void setBackgroundImage(const char* path, int width, int height) {
-	IplImage* img = cvLoadImage(path);
-
-	int depth = img->depth;
-	int channels = img->nChannels;
-
-	IplImage* resizedImage = cvCreateImage(cv::Size(width,height), depth, channels);
-
-	cvResize(img, resizedImage, CV_INTER_LINEAR);
-
-	g_pBgImg = resizedImage;
+void setBackgroundImage(IplImage* img) {
+	g_pBgImg = img;
 }
 
 
@@ -294,6 +297,35 @@ void DrawPlayerSkeleton(XnUserID player) {
 }
 
 
+// Fetch fade image according to g_fadeDirection:
+// -1: The image left of the current
+//  1: The image right of the current
+//  0: NULL, no fade image needed
+inline const IplImage* getFadeBackgroundImage() {
+	if(!g_fadeDirection)
+		return NULL;
+
+	const IplImage* img;
+	std::list<IplImage*>::const_iterator currentImage(g_currentBackgroundImage);
+
+	switch(g_fadeDirection) {
+		// from left, so get the left
+		case -1:
+			if(g_backgroundImages.begin() == currentImage) {
+				return *g_backgroundImages.end();
+			}
+			return *(--currentImage);
+			break;
+
+		// from right
+		case  1:
+			if(g_backgroundImages.end() == currentImage) {
+				return *g_backgroundImages.begin();
+			}
+			return *(++currentImage);
+			break;
+	}
+}
 
 
 inline void DrawBackground(TextureData& sceneTextureData)
@@ -303,10 +335,9 @@ inline void DrawBackground(TextureData& sceneTextureData)
 	int nYRes = sceneTextureData.YRes;
 
 	if(!bInitialized) {
-		// Take first image in list
-		const char* path = (*g_backgroundImages.begin()).c_str();
-
-		setBackgroundImage(path, nXRes, nYRes);
+		// Take first image in list as initial background
+		setBackgroundImage(*(g_backgroundImages.begin()));
+		g_currentBackgroundImage = g_backgroundImages.begin();
 
 		bInitialized = true;
 	}
@@ -314,15 +345,22 @@ inline void DrawBackground(TextureData& sceneTextureData)
 	// Background image data
 	IplImage* pCvBgImage = getBackgroundImage();
 	const XnUInt8* pBgImage = (const XnUInt8*)pCvBgImage->imageData;
-
-	// TODO load image directly as texture?
-
 	unsigned char* pDestImage = sceneTextureData.data;
+
+	const IplImage* pFadeImage = NULL;
+	const XnUInt8* pFadeImageData = NULL;
+	int nFadeImageWidth = -1;
+
+	// Setup fading image, if needed
+	if(g_fadeDirection != 0) {
+		pFadeImage = getFadeBackgroundImage();
+		pFadeImageData = (const XnUInt8*)pFadeImage->imageData;
+		nFadeImageWidth = pFadeImage->width;
+	}
 
 	// Prepare the texture map
 	for (unsigned int nY=0; nY < nYRes; nY++)
 	{
-#if 1
 		for (unsigned int nX=0; nX < nXRes; nX++)
 		{
 			// Draw background image
@@ -336,6 +374,27 @@ inline void DrawBackground(TextureData& sceneTextureData)
 				b = pBgImage[0];
 			}
 
+			switch(g_fadeDirection) {
+				case -1:
+					// Get left image
+					if(nX <= g_fadeXPosition) {
+						r = pFadeImageData[nFadeImageWidth * nY + nX + 2];
+						g = pFadeImageData[nFadeImageWidth * nY + nX + 1];
+						b = pFadeImageData[nFadeImageWidth * nY + nX + 0];
+					}
+					break;
+				case  1:
+					// Get right image
+					if(nX >= g_fadeXPosition) {
+						r = pFadeImageData[nFadeImageWidth * nY + nX + 2];
+						g = pFadeImageData[nFadeImageWidth * nY + nX + 1];
+						b = pFadeImageData[nFadeImageWidth * nY + nX + 0];
+					}
+					break;
+				default:
+					break;
+			}
+
 			pDestImage[0] = r;
 			pDestImage[1] = g;
 			pDestImage[2] = b;
@@ -343,16 +402,32 @@ inline void DrawBackground(TextureData& sceneTextureData)
 			pBgImage += 3;
 			pDestImage += 3;
 		}
-#else
-		// TODO optimize, use memcpy or something, could be done by setting
-		// the texture to BGR and setting data to pBgImage
-		printf("Writing %d (of %d)\n", nXRes*3, nYRes);
-		memcpy(pDestImage, pBgImage, nXRes * 3);
-#endif
-
 
 		pDestImage += (sceneTextureData.width - nXRes) *3;
 		pBgImage += (pCvBgImage->widthStep - nXRes*3);
+	}
+
+	// Mark fading as finished, if it reached the goal
+	if((g_fadeDirection == -1 && g_fadeXPosition >= nXRes) ||
+	   (g_fadeDirection ==  1 && g_fadeXPosition <= 0))
+	{
+		g_fadeDirection = 0;
+		g_fadeXPosition = 0;
+
+		switch(g_fadeDirection) {
+			case -1:
+				g_currentBackgroundImage--;
+				break;
+			case  1:
+				g_currentBackgroundImage++;
+				break;
+		}
+
+		setBackgroundImage(*g_currentBackgroundImage);
+	} else if(g_fadeDirection == -1) {
+		g_fadeXPosition += g_fadeStep;
+	} else if(g_fadeDirection ==  1) {
+		g_fadeXPosition -= g_fadeStep;
 	}
 }
 
@@ -502,10 +577,12 @@ static bool CaptureHandMovement(XnUserID player, XnPoint3D projectivePoint) {
 	return false;
 }
 
+
+// Stores the swipe direction in fromLeft parameter if it's not NULL
 static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLeft)
 {
-    int MinXDelta = 300; // required horizontal distance
-    int MaxYDelta = 100; // max mount of vertical variation
+    int MinXDelta = g_swipeMinXDelta; // required horizontal distance
+    int MaxYDelta = g_swipeMinYDelta; // max mount of vertical variation
 
     float x1 = (*(points.begin())).X;
     float y1 = (*(points.begin())).Y;
@@ -743,12 +820,17 @@ inline void DrawPlayer(
 					bool fromLeft = false;
 					bool swiped = DetectSwipe(g_nHistorySize, g_History, &fromLeft);
 
+					// draw red line if swiped from left, draw
+					// blue one if swiped from right. Otherwise white.
 					if(swiped) {
-						glColor4f(0.5,0.5,1,1);
+						if(fromLeft) {
+							glColor4f(1,0,0,1);
+						} else {
+							glColor4f(0,0,1,1);
+						}
 					} else {
 						glColor4f(1,1,1,1);
 					}
-
 
 					glPointSize(2);
 					glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
