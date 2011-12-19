@@ -87,10 +87,7 @@ int brushSoftness = 50;
 
 int smudgeBufferSize = 4;
 
-Brush currentBrush;
-
-
-
+Brush brushes[2];
 
 struct TextureData {
 	unsigned char*	data;
@@ -636,9 +633,10 @@ static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLef
 
 
 inline void SmudgeAtPosition(
-                             const TextureData& sceneTextureData,
-                             const int x,
-                             const int y)
+	const TextureData& sceneTextureData,
+	const int x,
+	const int y,
+	const int handId)
 {
     static bool initialized=false;
 	static IplImage* targetImage;
@@ -649,11 +647,11 @@ inline void SmudgeAtPosition(
     XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
 
-    currentBrush.setRadius(brushRadius);
-    currentBrush.setSoftness(brushSoftness / 100.0);
-    currentBrush.createImageShape();
+    brushes[handId].setRadius(brushRadius);
+    brushes[handId].setSoftness(brushSoftness / 100.0);
+    brushes[handId].createImageShape();
 
-	currentBrush.paint(getBackgroundImage(), cvPoint(x, y));
+	brushes[handId].paint(getBackgroundImage(), cvPoint(x, y));
 }
 
 
@@ -816,11 +814,11 @@ inline void DrawPlayer(
 			}
 
 			if(true || isRedLeft) {
-				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y);
+				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
 			}
 
 			if(true || isRedRight) {
-				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y);
+				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
 			}
 		}
 
