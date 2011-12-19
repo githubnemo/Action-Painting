@@ -39,6 +39,8 @@ XnBool g_bCalibrated = FALSE;
 
 std::list<IplImage*> g_backgroundImages;
 
+extern int g_fadeDirection;
+
 
 #ifdef USE_GLUT
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
@@ -327,6 +329,12 @@ void glutKeyboard (unsigned char key, int x, int y)
 			glutFullScreen();
 			fullscreen = 1;
 		}
+		break;
+	case 'l':
+		g_fadeDirection = -1;
+		break;
+	case 'r':
+		g_fadeDirection = 1;
 		break;
 	case'p':
 		g_bPause = !g_bPause;
