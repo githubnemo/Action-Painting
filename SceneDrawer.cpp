@@ -301,30 +301,30 @@ void DrawPlayerSkeleton(XnUserID player) {
 // -1: The image left of the current
 //  1: The image right of the current
 //  0: NULL, no fade image needed
-inline const IplImage* getFadeBackgroundImage() {
-	if(!g_fadeDirection)
-		return NULL;
-
-	const IplImage* img;
+const std::list<IplImage*>::const_iterator getFadeBackgroundIterator() {
 	std::list<IplImage*>::const_iterator currentImage(g_currentBackgroundImage);
+
+	if(!g_fadeDirection)
+		return currentImage;
 
 	switch(g_fadeDirection) {
 		// from left, so get the left
 		case -1:
 			if(g_backgroundImages.begin() == currentImage) {
-				return *g_backgroundImages.end();
+				std::list<IplImage*>::const_iterator tmp(--g_backgroundImages.end());
+				return tmp;
 			}
-			return *(--currentImage);
-			break;
+			return --currentImage;
 
 		// from right
 		case  1:
-			if(g_backgroundImages.end() == currentImage) {
-				return *g_backgroundImages.begin();
+			if(--g_backgroundImages.end() == currentImage) {
+				std::list<IplImage*>::const_iterator tmp(g_backgroundImages.begin());
+				return tmp;
 			}
-			return *(++currentImage);
-			break;
+			return ++currentImage;
 	}
+	return currentImage;
 }
 
 
@@ -353,7 +353,7 @@ inline void DrawBackground(TextureData& sceneTextureData)
 
 	// Setup fading image, if needed
 	if(g_fadeDirection != 0) {
-		pFadeImage = getFadeBackgroundImage();
+		pFadeImage = *(getFadeBackgroundIterator());
 		pFadeImageData = (const XnUInt8*)pFadeImage->imageData;
 		nFadeImageWidth = pFadeImage->width;
 	}
