@@ -409,17 +409,10 @@ inline void DrawBackground(TextureData& sceneTextureData)
 	if((g_fadeDirection == -1 && g_fadeXPosition >= nXRes) ||
 	   (g_fadeDirection ==  1 && g_fadeXPosition <= 0))
 	{
+		g_currentBackgroundImage = getFadeBackgroundIterator();
+
 		g_fadeDirection = 0;
 		g_fadeXPosition = 0;
-
-		switch(g_fadeDirection) {
-			case -1:
-				g_currentBackgroundImage--;
-				break;
-			case  1:
-				g_currentBackgroundImage++;
-				break;
-		}
 
 		setBackgroundImage(*g_currentBackgroundImage);
 	} else if(g_fadeDirection == -1) {
