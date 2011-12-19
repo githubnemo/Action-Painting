@@ -14,4 +14,7 @@ void DoFadeFromLeft();
 
 void DoFadeFromRight();
 
+extern int g_fadeDirection;
+extern bool g_bDrawDebugInfo;
+
 #endif

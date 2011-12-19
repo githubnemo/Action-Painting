@@ -71,6 +71,8 @@ int g_fadeDirection = 1; // -1 from left, 0 none, +1 from right
 int g_fadeXPosition = 0; // Value of left/right edge of new image
 int g_fadeStep = 50;	 // How many pixels fade per step
 
+bool g_bDrawDebugInfo = false;
+
 // Smudge Algorithm parameters
 int brushRadius = 10;       // Radius of the brush
 
@@ -710,12 +712,14 @@ static void doSwipe(XnUserID player, XnPoint3D* points) {
 				glColor4f(1,1,1,1);
 			}
 
-			glPointSize(2);
-			glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
-			glDrawArrays(GL_LINE_STRIP, 0, i);
+			if(g_bDrawDebugInfo) {
+				glPointSize(2);
+				glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
+				glDrawArrays(GL_LINE_STRIP, 0, i);
 
-			glPointSize(8);
-			glDrawArrays(GL_POINTS, 0, 1);
+				glPointSize(8);
+				glDrawArrays(GL_POINTS, 0, 1);
+			}
 			glFlush();
 		}
 	}
@@ -818,14 +822,16 @@ inline void DrawPlayer(
 			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15, 60);
 			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15, 60);
 
-			sprintf(positionString, "red=%d", isRedRight);
-			glColor4f(1,1,1,1);
-			glRasterPos2i(points[1].X, points[1].Y);
-			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+			if(g_bDrawDebugInfo) {
+				sprintf(positionString, "red=%d", isRedRight);
+				glColor4f(1,1,1,1);
+				glRasterPos2i(points[1].X, points[1].Y);
+				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 
-			sprintf(positionString, "red=%d", isRedLeft);
-			glRasterPos2i(points[0].X, points[0].Y);
-			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+				sprintf(positionString, "red=%d", isRedLeft);
+				glRasterPos2i(points[0].X, points[0].Y);
+				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+			}
 
 			doSwipe(player, points);
 
@@ -840,7 +846,7 @@ inline void DrawPlayer(
 	}
 
 	// Draw skeleton of user
-	if (player != 0)
+	if (player != 0 && g_bDrawDebugInfo)
 	{
 		DrawPlayerSkeleton(player);
 	}
