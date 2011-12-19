@@ -67,7 +67,7 @@ int g_swipeMinYDelta = 100;
 int g_swipeMinXDelta = 250;
 // swipe to right: image fades from left (fadeDirection = -1)
 // swipte to left: image fades from right (fadeDirection = 1)
-int g_fadeDirection = 0; // -1 from left, 0 none, +1 from right
+int g_fadeDirection = -1; // -1 from left, 0 none, +1 from right
 int g_fadeXPosition = 0; // Value of left/right edge of new image
 int g_fadeStep = 50;	 // How many pixels fade per step
 
@@ -301,30 +301,30 @@ void DrawPlayerSkeleton(XnUserID player) {
 // -1: The image left of the current
 //  1: The image right of the current
 //  0: NULL, no fade image needed
-inline const IplImage* getFadeBackgroundImage() {
-	if(!g_fadeDirection)
-		return NULL;
-
-	const IplImage* img;
+const std::list<IplImage*>::const_iterator getFadeBackgroundIterator() {
 	std::list<IplImage*>::const_iterator currentImage(g_currentBackgroundImage);
+
+	if(!g_fadeDirection)
+		return currentImage;
 
 	switch(g_fadeDirection) {
 		// from left, so get the left
 		case -1:
 			if(g_backgroundImages.begin() == currentImage) {
-				return *g_backgroundImages.end();
+				std::list<IplImage*>::const_iterator tmp(--g_backgroundImages.end());
+				return tmp;
 			}
-			return *(--currentImage);
-			break;
+			return --currentImage;
 
 		// from right
 		case  1:
-			if(g_backgroundImages.end() == currentImage) {
-				return *g_backgroundImages.begin();
+			if(--g_backgroundImages.end() == currentImage) {
+				std::list<IplImage*>::const_iterator tmp(g_backgroundImages.begin());
+				return tmp;
 			}
-			return *(++currentImage);
-			break;
+			return ++currentImage;
 	}
+	return currentImage;
 }
 
 
@@ -353,7 +353,7 @@ inline void DrawBackground(TextureData& sceneTextureData)
 
 	// Setup fading image, if needed
 	if(g_fadeDirection != 0) {
-		pFadeImage = getFadeBackgroundImage();
+		pFadeImage = *(getFadeBackgroundIterator());
 		pFadeImageData = (const XnUInt8*)pFadeImage->imageData;
 		nFadeImageWidth = pFadeImage->width;
 	}
@@ -378,9 +378,9 @@ inline void DrawBackground(TextureData& sceneTextureData)
 				case -1:
 					// Get left image
 					if(nX <= g_fadeXPosition) {
-						r = pFadeImageData[nFadeImageWidth * nY + nX + 2];
-						g = pFadeImageData[nFadeImageWidth * nY + nX + 1];
-						b = pFadeImageData[nFadeImageWidth * nY + nX + 0];
+						r = pFadeImageData[nFadeImageWidth * nY + nX*3 + 2];
+						g = pFadeImageData[nFadeImageWidth * nY + nX*3 + 1];
+						b = pFadeImageData[nFadeImageWidth * nY + nX*3 + 0];
 					}
 					break;
 				case  1:
@@ -390,8 +390,6 @@ inline void DrawBackground(TextureData& sceneTextureData)
 						g = pFadeImageData[nFadeImageWidth * nY + nX + 1];
 						b = pFadeImageData[nFadeImageWidth * nY + nX + 0];
 					}
-					break;
-				default:
 					break;
 			}
 
@@ -411,17 +409,10 @@ inline void DrawBackground(TextureData& sceneTextureData)
 	if((g_fadeDirection == -1 && g_fadeXPosition >= nXRes) ||
 	   (g_fadeDirection ==  1 && g_fadeXPosition <= 0))
 	{
+		g_currentBackgroundImage = getFadeBackgroundIterator();
+
 		g_fadeDirection = 0;
 		g_fadeXPosition = 0;
-
-		switch(g_fadeDirection) {
-			case -1:
-				g_currentBackgroundImage--;
-				break;
-			case  1:
-				g_currentBackgroundImage++;
-				break;
-		}
 
 		setBackgroundImage(*g_currentBackgroundImage);
 	} else if(g_fadeDirection == -1) {
@@ -858,9 +849,12 @@ inline void DrawPlayer(
 }
 
 
-void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
-		const xn::ImageMetaData& imd, XnUserID player) {
-
+void DrawScene(
+	const xn::DepthMetaData& dmd,
+	const xn::SceneMetaData& smd,
+	const xn::ImageMetaData& imd,
+	XnUserID player)
+{
 	static bool bInitialized = false;
 	static TextureData sceneTextureData;
 
