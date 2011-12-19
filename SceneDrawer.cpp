@@ -839,7 +839,9 @@ inline void DrawPlayer(
 	glDisable(GL_TEXTURE_2D);
 
 
-	DrawUserLabels(player);
+	if(g_bDrawDebugInfo) {
+		DrawUserLabels(player);
+	}
 
 	// Sponge detection
 	{
