@@ -10,4 +10,8 @@
 void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	const xn::ImageMetaData& imd, XnUserID player);
 
+void DoFadeFromLeft();
+
+void DoFadeFromRight();
+
 #endif

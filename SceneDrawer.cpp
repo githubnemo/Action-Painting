@@ -67,7 +67,7 @@ int g_swipeMinYDelta = 100;
 int g_swipeMinXDelta = 250;
 // swipe to right: image fades from left (fadeDirection = -1)
 // swipte to left: image fades from right (fadeDirection = 1)
-int g_fadeDirection = 0; // -1 from left, 0 none, +1 from right
+int g_fadeDirection = 1; // -1 from left, 0 none, +1 from right
 int g_fadeXPosition = 0; // Value of left/right edge of new image
 int g_fadeStep = 50;	 // How many pixels fade per step
 
@@ -653,6 +653,18 @@ inline void SmudgeAtPosition(
 	brushes[handId].paint(getBackgroundImage(), cvPoint(x, y));
 }
 
+
+void DoFadeFromRight() {
+	g_fadeDirection = 1;
+	g_fadeXPosition = getBackgroundImage()->width;
+}
+
+void DoFadeFromLeft() {
+	g_fadeDirection = -1;
+	g_fadeXPosition = 0;
+}
+
+
 // Do swipe action if possible
 static void doSwipe(XnUserID player, XnPoint3D* points) {
 	// Swipe detection to change background.
@@ -688,10 +700,10 @@ static void doSwipe(XnUserID player, XnPoint3D* points) {
 			if(swiped) {
 				if(fromLeft) {
 					glColor4f(1,0,0,1);
-					g_fadeDirection =  1;
+					DoFadeFromRight();
 				} else {
 					glColor4f(0,0,1,1);
-					g_fadeDirection = -1;
+					DoFadeFromLeft();
 				}
 				break;
 			} else {

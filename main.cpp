@@ -331,10 +331,10 @@ void glutKeyboard (unsigned char key, int x, int y)
 		}
 		break;
 	case 'l':
-		g_fadeDirection = -1;
+		DoFadeFromLeft();
 		break;
 	case 'r':
-		g_fadeDirection = 1;
+		DoFadeFromRight();
 		break;
 	case'p':
 		g_bPause = !g_bPause;
