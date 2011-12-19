@@ -849,9 +849,12 @@ inline void DrawPlayer(
 }
 
 
-void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
-		const xn::ImageMetaData& imd, XnUserID player) {
-
+void DrawScene(
+	const xn::DepthMetaData& dmd,
+	const xn::SceneMetaData& smd,
+	const xn::ImageMetaData& imd,
+	XnUserID player)
+{
 	static bool bInitialized = false;
 	static TextureData sceneTextureData;
 
