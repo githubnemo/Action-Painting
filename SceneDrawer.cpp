@@ -814,8 +814,10 @@ inline void DrawPlayer(
 					if(swiped) {
 						if(fromLeft) {
 							glColor4f(1,0,0,1);
+							g_fadeDirection =  1;
 						} else {
 							glColor4f(0,0,1,1);
+							g_fadeDirection = -1;
 						}
 					} else {
 						glColor4f(1,1,1,1);
