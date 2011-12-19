@@ -653,6 +653,62 @@ inline void SmudgeAtPosition(
 	brushes[handId].paint(getBackgroundImage(), cvPoint(x, y));
 }
 
+// Do swipe action if possible
+static void doSwipe(XnUserID player, XnPoint3D* points) {
+	// Swipe detection to change background.
+	// Search for swipe gesture on each hand.
+	for(unsigned int handId=0; handId < 2; handId++)
+	{
+		bool enoughPoints = CaptureHandMovement(player, handId, points[handId]);
+
+		if(enoughPoints) {
+			XnUInt32 nPoints = 0;
+			XnUInt32 i = 0;
+
+			// Go over all previous positions of current hand
+			std::list<XnPoint3D>::const_iterator PositionIterator;
+			for (PositionIterator = g_History[handId].begin();
+				PositionIterator != g_History[handId].end();
+				++PositionIterator, ++i)
+			{
+				// Add position to buffer
+				XnPoint3D pt(*PositionIterator);
+				g_pfPositionBuffer[3*i + 0] = pt.X;
+				g_pfPositionBuffer[3*i + 1] = pt.Y;
+				g_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
+			}
+
+			// Set color
+			// Draw buffer:
+			bool fromLeft = false;
+			bool swiped = DetectSwipe(g_nHistorySize, g_History[handId], &fromLeft);
+
+			// draw red line if swiped from left, draw
+			// blue one if swiped from right. Otherwise white.
+			if(swiped) {
+				if(fromLeft) {
+					glColor4f(1,0,0,1);
+					g_fadeDirection =  1;
+				} else {
+					glColor4f(0,0,1,1);
+					g_fadeDirection = -1;
+				}
+				break;
+			} else {
+				glColor4f(1,1,1,1);
+			}
+
+			glPointSize(2);
+			glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
+			glDrawArrays(GL_LINE_STRIP, 0, i);
+
+			glPointSize(8);
+			glDrawArrays(GL_POINTS, 0, 1);
+			glFlush();
+		}
+	}
+}
+
 
 inline void DrawPlayer(
 		const TextureData& sceneTextureData,
@@ -759,58 +815,7 @@ inline void DrawPlayer(
 			glRasterPos2i(points[0].X, points[0].Y);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 
-			// Swipe detection to change background
-			for(unsigned int handId=0; handId < 2; handId++)
-			{
-				bool enoughPoints = CaptureHandMovement(player, handId, points[handId]);
-
-				if(enoughPoints) {
-					XnUInt32 nPoints = 0;
-					XnUInt32 i = 0;
-
-					// Go over all previous positions of current hand
-					std::list<XnPoint3D>::const_iterator PositionIterator;
-					for (PositionIterator = g_History[handId].begin();
-						PositionIterator != g_History[handId].end();
-						++PositionIterator, ++i)
-					{
-						// Add position to buffer
-						XnPoint3D pt(*PositionIterator);
-						g_pfPositionBuffer[3*i + 0] = pt.X;
-						g_pfPositionBuffer[3*i + 1] = pt.Y;
-						g_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
-					}
-
-					// Set color
-					// Draw buffer:
-					bool fromLeft = false;
-					bool swiped = DetectSwipe(g_nHistorySize, g_History[handId], &fromLeft);
-
-					// draw red line if swiped from left, draw
-					// blue one if swiped from right. Otherwise white.
-					if(swiped) {
-						if(fromLeft) {
-							glColor4f(1,0,0,1);
-							g_fadeDirection =  1;
-						} else {
-							glColor4f(0,0,1,1);
-							g_fadeDirection = -1;
-						}
-					} else {
-						glColor4f(1,1,1,1);
-					}
-
-					glPointSize(2);
-					glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
-					glDrawArrays(GL_LINE_STRIP, 0, i);
-
-					glPointSize(8);
-					glDrawArrays(GL_POINTS, 0, 1);
-					glFlush();
-
-					//g_History.clear();
-				}
-			}
+			doSwipe(player, points);
 
 			if(true || isRedLeft) {
 				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
