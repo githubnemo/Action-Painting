@@ -59,7 +59,7 @@ GLfloat g_pfTexCoords[8];
 
 // Swipe detection ಠ_ಠ
 // g_nHistorySize is the amount of points to capture
-std::list<XnPoint3D> g_History;
+std::map<int, std::list<XnPoint3D> > g_History;
 XnFloat* g_pfPositionBuffer;
 int g_nHistorySize = 15;
 // See DetectSwipe for details of the following 2 variables
@@ -557,13 +557,17 @@ static bool checkKernelForRed(
 
 
 // Return true if buffer has reached size limit
-static bool CaptureHandMovement(XnUserID player, XnPoint3D projectivePoint) {
+static bool CaptureHandMovement(
+	XnUserID player,
+	int handId,
+	XnPoint3D projectivePoint)
+{
 	// Add new position to the history buffer
-	g_History.push_front(projectivePoint);
+	g_History[handId].push_front(projectivePoint);
 
 	// Keep size of history buffer
-	if (g_History.size() > g_nHistorySize) {
-		g_History.pop_back();
+	if (g_History[handId].size() > g_nHistorySize) {
+		g_History[handId].pop_back();
 		return true;
 	}
 	return false;
@@ -649,32 +653,7 @@ inline void SmudgeAtPosition(
     currentBrush.setSoftness(brushSoftness / 100.0);
     currentBrush.createImageShape();
 
-
-    if(!initialized) {
-		//srcImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
-		//targetImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
-
-        //int depth = srcImage->depth;
-        //int channels = srcImage->nChannels;
-
-        //targetImage = cvCreateImage(cvSize(nXRes, nYRes), depth, channels);
-
-        //srcImage->imageData = (char*) sceneTextureData.data;
-        //imageMat = new cv::Mat(srcImage);
-
-        //targetImage->imageData = (char*) sceneTextureData.data;
-        //targetImageMat = new cv::Mat(targetImage);
-
-		initialized = true;
-
-        //cv::medianBlur(*imageMat, *targetImageMat, 11);
-
-
-        //cvReleaseImage(&g_pBgImg);
-        //g_pBgImg = targetImage;
-	} else {
-        currentBrush.paint(getBackgroundImage(), cvPoint(x, y));
-    }
+	currentBrush.paint(getBackgroundImage(), cvPoint(x, y));
 }
 
 
@@ -784,8 +763,9 @@ inline void DrawPlayer(
 			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 
 			// Swipe detection to change background
+			for(unsigned int handId=0; handId < 2; handId++)
 			{
-				bool enoughPoints = CaptureHandMovement(player, points[1]);
+				bool enoughPoints = CaptureHandMovement(player, handId, points[handId]);
 
 				if(enoughPoints) {
 					XnUInt32 nPoints = 0;
@@ -793,8 +773,8 @@ inline void DrawPlayer(
 
 					// Go over all previous positions of current hand
 					std::list<XnPoint3D>::const_iterator PositionIterator;
-					for (PositionIterator = g_History.begin();
-						PositionIterator != g_History.end();
+					for (PositionIterator = g_History[handId].begin();
+						PositionIterator != g_History[handId].end();
 						++PositionIterator, ++i)
 					{
 						// Add position to buffer
@@ -807,7 +787,7 @@ inline void DrawPlayer(
 					// Set color
 					// Draw buffer:
 					bool fromLeft = false;
-					bool swiped = DetectSwipe(g_nHistorySize, g_History, &fromLeft);
+					bool swiped = DetectSwipe(g_nHistorySize, g_History[handId], &fromLeft);
 
 					// draw red line if swiped from left, draw
 					// blue one if swiped from right. Otherwise white.
@@ -835,7 +815,13 @@ inline void DrawPlayer(
 				}
 			}
 
-            SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y);
+			if(true || isRedLeft) {
+				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y);
+			}
+
+			if(true || isRedRight) {
+				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y);
+			}
 		}
 
 
