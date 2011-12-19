@@ -637,7 +637,6 @@ inline void SmudgeAtPosition(
                              const int y)
 {
     static bool initialized=false;
-	static IplImage* srcImage;
 	static IplImage* targetImage;
 
     static cv::Mat* imageMat;
@@ -654,8 +653,6 @@ inline void SmudgeAtPosition(
     if(!initialized) {
 		//srcImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
 		//targetImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
-
-        srcImage = getBackgroundImage();
 
         //int depth = srcImage->depth;
         //int channels = srcImage->nChannels;
@@ -676,7 +673,7 @@ inline void SmudgeAtPosition(
         //cvReleaseImage(&g_pBgImg);
         //g_pBgImg = targetImage;
 	} else {
-        currentBrush.paint(srcImage, cvPoint(x, y));
+        currentBrush.paint(getBackgroundImage(), cvPoint(x, y));
     }
 }
 
