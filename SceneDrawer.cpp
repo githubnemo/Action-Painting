@@ -349,13 +349,13 @@ inline void DrawBackground(TextureData& sceneTextureData)
 
 	const IplImage* pFadeImage = NULL;
 	const XnUInt8* pFadeImageData = NULL;
-	int nFadeImageWidth = -1;
+	int nFadeImageWidthStep = -1;
 
 	// Setup fading image, if needed
 	if(g_fadeDirection != 0) {
 		pFadeImage = *(getFadeBackgroundIterator());
 		pFadeImageData = (const XnUInt8*)pFadeImage->imageData;
-		nFadeImageWidth = pFadeImage->width;
+		nFadeImageWidthStep = pFadeImage->widthStep;
 	}
 
 	// Prepare the texture map
@@ -378,20 +378,18 @@ inline void DrawBackground(TextureData& sceneTextureData)
 				case -1:
 					// Get left image
 					if(nX <= g_fadeXPosition) {
-						r = pFadeImageData[nFadeImageWidth * nY + nX + 2];
-						g = pFadeImageData[nFadeImageWidth * nY + nX + 1];
-						b = pFadeImageData[nFadeImageWidth * nY + nX + 0];
+						r = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 2];
+						g = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 1];
+						b = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 0];
 					}
 					break;
 				case  1:
 					// Get right image
 					if(nX >= g_fadeXPosition) {
-						r = pFadeImageData[nFadeImageWidth * nY + nX + 2];
-						g = pFadeImageData[nFadeImageWidth * nY + nX + 1];
-						b = pFadeImageData[nFadeImageWidth * nY + nX + 0];
+						r = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 2];
+						g = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 1];
+						b = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 0];
 					}
-					break;
-				default:
 					break;
 			}
 
