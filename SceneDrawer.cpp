@@ -103,7 +103,7 @@ struct TextureData {
 typedef struct TextureData TextureData;
 
 
-unsigned int getClosestPowerOfTwo(unsigned int n)
+static unsigned int getClosestPowerOfTwo(unsigned int n)
 {
 	unsigned int m = 2;
 	while(m < n) m<<=1;
@@ -117,7 +117,7 @@ unsigned int getClosestPowerOfTwo(unsigned int n)
  *
  * RGBA texture with getClosestPowerOfTwo(width) x getClosestPowerOfTwo(height).
  */
-void initTexture(TextureData* pTexData, int nXRes, int nYRes)
+static void initTexture(TextureData* pTexData, int nXRes, int nYRes)
 {
 	GLuint texID = 0;
 	glGenTextures(1,&texID);
@@ -141,8 +141,7 @@ void initTexture(TextureData* pTexData, int nXRes, int nYRes)
 }
 
 
-
-void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
+static void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
 	GLfloat verts[8] = {
 		topLeftX, topLeftY,
@@ -158,7 +157,7 @@ void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bot
 }
 
 
-void DrawTexture(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
+static void DrawTexture(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glTexCoordPointer(2, GL_FLOAT, 0, g_pfTexCoords);
@@ -186,7 +185,7 @@ XnFloat Colors[][3] =
 XnUInt32 nColors = 10;
 
 
-void glPrintString(void *font, char *str)
+static void glPrintString(void *font, char *str)
 {
 	size_t i,l = strlen(str);
 
@@ -198,7 +197,7 @@ void glPrintString(void *font, char *str)
 
 
 // Draws part of the player's skeleton, conneting two parts with a line
-void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
+static void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 {
 	if (!g_UserGenerator.GetSkeletonCap().IsCalibrated(player))
 	{
@@ -233,17 +232,17 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 
 
 // Return reference to the cv IplImage of the background image
-IplImage* getBackgroundImage() {
+static IplImage* getBackgroundImage() {
 	return g_pBgImg;
 }
 
 
-void setBackgroundImage(IplImage* img) {
+static void setBackgroundImage(IplImage* img) {
 	g_pBgImg = img;
 }
 
 
-void DrawUserLabels(XnUserID player) {
+static void DrawUserLabels(XnUserID player) {
 	char strLabel[20] = "";
 	XnUserID aUsers[15];
 	XnUInt16 nUsers = 15;
@@ -267,7 +266,7 @@ void DrawUserLabels(XnUserID player) {
 }
 
 
-void DrawPlayerSkeleton(XnUserID player) {
+static void DrawPlayerSkeleton(XnUserID player) {
 	glBegin(GL_LINES);
 	glColor4f(1-Colors[player%nColors][0], 1-Colors[player%nColors][1], 1-Colors[player%nColors][2], 1);
 	DrawLimb(player, XN_SKEL_HEAD, XN_SKEL_NECK);
@@ -821,8 +820,6 @@ inline void DrawPlayer(
 				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
 			}
 		}
-
-
 	}
 
 	// Draw skeleton of user
