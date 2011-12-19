@@ -472,6 +472,8 @@ inline XnLabel* SmoothenUserPixels(
 	XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
 
+	return (XnLabel*)pLabels;
+
 	if(!initialized) {
 		srcImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 1);
 		targetImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 1);
@@ -773,9 +775,45 @@ inline void DrawPlayer(
 					// Player detected, use player image
 					int offset = nY * nImdXRes * 3 + nX * 3;
 
-					pDestImage[0] = pRealWorldImage[offset + 0] & 0xF0;
-					pDestImage[1] = pRealWorldImage[offset + 1] & 0xF0;
-					pDestImage[2] = pRealWorldImage[offset + 2] & 0xF0;
+					int value = (pRealWorldImage[offset + 2] - 127) / 2;
+
+					if((pDestImage[0] + value < 255 && pDestImage[0] + value > 0)
+					&& (pDestImage[1] + value < 255 && pDestImage[1] + value > 0)
+					&& (pDestImage[2] + value < 255 && pDestImage[2] + value > 0))
+					{
+						pDestImage[0] += value;
+
+						pDestImage[1] += value;
+
+						pDestImage[2] += value;
+					} else if((pDestImage[0] + value > 255)
+					|| (pDestImage[0] + value > 255)
+					|| (pDestImage[0] + value > 255))
+					{
+						pDestImage[0] = 255;
+						pDestImage[1] = 255;
+						pDestImage[2] = 255;
+
+					} else if((pDestImage[0] + value < 0)
+					|| (pDestImage[0] + value < 0)
+					|| (pDestImage[0] + value < 0))
+					{
+						pDestImage[0] = 0;
+						pDestImage[1] = 0;
+						pDestImage[2] = 0;
+					}
+
+					/*
+					if((pDestImage[0] + value < 255 && pDestImage[0] + value > 0)
+					&& (pDestImage[1] + value < 255 && pDestImage[1] + value > 0)
+					&& (pDestImage[2] + value < 255 && pDestImage[2] + value > 0))
+					{
+						pDestImage[0] += value;
+
+						pDestImage[1] += value;
+
+						pDestImage[2] += value;
+					}*/
 				}
 
 				pLabels++;
