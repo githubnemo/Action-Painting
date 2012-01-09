@@ -460,7 +460,8 @@ inline void ProcessRealWorldImage(
  */
 inline XnLabel* SmoothenUserPixels(
 		const TextureData &sceneTextureData,
-		const XnLabel* pLabels)
+		const XnLabel* pLabels,
+		const XnUserID playerId)
 {
 	static bool initialized=false;
 	static IplImage* srcImage;
@@ -471,8 +472,6 @@ inline XnLabel* SmoothenUserPixels(
 
 	XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
-
-	return (XnLabel*)pLabels;
 
 	if(!initialized) {
 		srcImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 1);
@@ -486,11 +485,15 @@ inline XnLabel* SmoothenUserPixels(
 		initialized = true;
 	}
 
+	if(playerId == 0) {
+		return (XnLabel*)pLabels;
+	}
+
 	// Copy pixels to srcImage, only black and white
 	for(unsigned int y=0; y < nYRes; y++) {
 		for(unsigned int x=0; x < nXRes; x++) {
 			XnLabel label = *pLabels;
-			char value = (label != 0) ? 0xFF : 0;
+			char value = (label == playerId) ? 0xFF : 0;
 			srcImageData[y*srcImage->widthStep+x] = value;
 			pLabels++;
 		}
@@ -501,18 +504,19 @@ inline XnLabel* SmoothenUserPixels(
 	// Do the erosion, 2 iterations (more iterations -> more erosion)
 	cvErode(srcImage, targetImage, erodeKernel, 1);
 
-	/* Debug output
+#if 0
+	/* Debug output */
 	cvShowImage("source image", srcImage);
 	cvShowImage("test image", targetImage);
 	cvWaitKey(1);
-	*/
+#endif
 
 
 	// Copy pixels from eroded image to target user pixel memory
 	for(unsigned int y=0; y < nYRes; y++) {
 		for(unsigned int x=0; x < nXRes; x++) {
 			char value = targetImage->imageData[y*srcImage->widthStep+x];
-			pTargetLabels[y*nXRes+x] = (value != 0) ? 0xFF : 0;
+			pTargetLabels[y*nXRes+x] = (value != 0) ? playerId : 0;
 		}
 	}
 
@@ -760,7 +764,7 @@ inline void DrawPlayer(
 
 		memcpy(pRealWorldImage, pImage, imd.XRes()*imd.YRes()*3);
 
-		const XnLabel* pLabels = SmoothenUserPixels(sceneTextureData, pOrgLabels);
+		const XnLabel* pLabels = SmoothenUserPixels(sceneTextureData, pOrgLabels, player);
 
 		ProcessRealWorldImage(sceneTextureData, pImage, pRealWorldImage);
 
