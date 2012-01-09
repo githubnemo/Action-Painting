@@ -526,7 +526,8 @@ static bool checkKernelForRed(
 		const TextureData& texData,
 		XnPoint3D p,
 		short maskSize,
-		short minPercent)
+		short minPercent,
+		bool print)
 {
 	unsigned char* img = texData.data;
 	int red = 0, other = 1;
@@ -546,10 +547,9 @@ static bool checkKernelForRed(
 		}
 	}
 
-	/*
-	printf("%d, %d => %lf (%d)\n", red, other, (double)red/other * 100,
+	if(print)
+		printf("%d, %d => %lf (%d)\n", red, other, (double)red/other * 100,
 			(double)red/other * 100 > 40);
-	*/
 
 	return (double)red/other * 100 > minPercent;
 }
@@ -859,8 +859,8 @@ inline void DrawPlayer(
 
 			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
 
-			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15, 60);
-			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15, 60);
+			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15, 60, false);
+			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15, 60, true);
 
 			if(g_bDrawDebugInfo) {
 				sprintf(positionString, "red=%d", isRedRight);
