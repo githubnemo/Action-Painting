@@ -771,7 +771,7 @@ inline void DrawPlayer(
 			{
 				XnLabel label = *pLabels;
 
-				if(label) {
+				if(label == player) {
 					// Player detected, use player image
 					int offset = nY * nImdXRes * 3 + nX * 3;
 
