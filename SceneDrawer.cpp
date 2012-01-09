@@ -59,7 +59,7 @@ GLfloat g_pfTexCoords[8];
 
 // Swipe detection ಠ_ಠ
 // g_nHistorySize is the amount of points to capture
-std::list<XnPoint3D> g_History;
+std::map<int, std::list<XnPoint3D> > g_History;
 XnFloat* g_pfPositionBuffer;
 int g_nHistorySize = 15;
 // See DetectSwipe for details of the following 2 variables
@@ -67,9 +67,11 @@ int g_swipeMinYDelta = 100;
 int g_swipeMinXDelta = 250;
 // swipe to right: image fades from left (fadeDirection = -1)
 // swipte to left: image fades from right (fadeDirection = 1)
-int g_fadeDirection = 0; // -1 from left, 0 none, +1 from right
+int g_fadeDirection = 1; // -1 from left, 0 none, +1 from right
 int g_fadeXPosition = 0; // Value of left/right edge of new image
 int g_fadeStep = 50;	 // How many pixels fade per step
+
+bool g_bDrawDebugInfo = false;
 
 // Smudge Algorithm parameters
 int brushRadius = 10;       // Radius of the brush
@@ -87,10 +89,7 @@ int brushSoftness = 50;
 
 int smudgeBufferSize = 4;
 
-Brush currentBrush;
-
-
-
+Brush brushes[2];
 
 struct TextureData {
 	unsigned char*	data;
@@ -106,7 +105,7 @@ struct TextureData {
 typedef struct TextureData TextureData;
 
 
-unsigned int getClosestPowerOfTwo(unsigned int n)
+static unsigned int getClosestPowerOfTwo(unsigned int n)
 {
 	unsigned int m = 2;
 	while(m < n) m<<=1;
@@ -120,7 +119,7 @@ unsigned int getClosestPowerOfTwo(unsigned int n)
  *
  * RGBA texture with getClosestPowerOfTwo(width) x getClosestPowerOfTwo(height).
  */
-void initTexture(TextureData* pTexData, int nXRes, int nYRes)
+static void initTexture(TextureData* pTexData, int nXRes, int nYRes)
 {
 	GLuint texID = 0;
 	glGenTextures(1,&texID);
@@ -144,8 +143,7 @@ void initTexture(TextureData* pTexData, int nXRes, int nYRes)
 }
 
 
-
-void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
+static void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
 	GLfloat verts[8] = {
 		topLeftX, topLeftY,
@@ -161,7 +159,7 @@ void DrawRectangle(float topLeftX, float topLeftY, float bottomRightX, float bot
 }
 
 
-void DrawTexture(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
+static void DrawTexture(float topLeftX, float topLeftY, float bottomRightX, float bottomRightY)
 {
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glTexCoordPointer(2, GL_FLOAT, 0, g_pfTexCoords);
@@ -189,7 +187,7 @@ XnFloat Colors[][3] =
 XnUInt32 nColors = 10;
 
 
-void glPrintString(void *font, char *str)
+static void glPrintString(void *font, char *str)
 {
 	size_t i,l = strlen(str);
 
@@ -201,7 +199,7 @@ void glPrintString(void *font, char *str)
 
 
 // Draws part of the player's skeleton, conneting two parts with a line
-void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
+static void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 {
 	if (!g_UserGenerator.GetSkeletonCap().IsCalibrated(player))
 	{
@@ -236,17 +234,17 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 
 
 // Return reference to the cv IplImage of the background image
-IplImage* getBackgroundImage() {
+static IplImage* getBackgroundImage() {
 	return g_pBgImg;
 }
 
 
-void setBackgroundImage(IplImage* img) {
+static void setBackgroundImage(IplImage* img) {
 	g_pBgImg = img;
 }
 
 
-void DrawUserLabels(XnUserID player) {
+static void DrawUserLabels(XnUserID player) {
 	char strLabel[20] = "";
 	XnUserID aUsers[15];
 	XnUInt16 nUsers = 15;
@@ -270,7 +268,7 @@ void DrawUserLabels(XnUserID player) {
 }
 
 
-void DrawPlayerSkeleton(XnUserID player) {
+static void DrawPlayerSkeleton(XnUserID player) {
 	glBegin(GL_LINES);
 	glColor4f(1-Colors[player%nColors][0], 1-Colors[player%nColors][1], 1-Colors[player%nColors][2], 1);
 	DrawLimb(player, XN_SKEL_HEAD, XN_SKEL_NECK);
@@ -474,6 +472,8 @@ inline XnLabel* SmoothenUserPixels(
 	XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
 
+	return (XnLabel*)pLabels;
+
 	if(!initialized) {
 		srcImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 1);
 		targetImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 1);
@@ -557,13 +557,17 @@ static bool checkKernelForRed(
 
 
 // Return true if buffer has reached size limit
-static bool CaptureHandMovement(XnUserID player, XnPoint3D projectivePoint) {
+static bool CaptureHandMovement(
+	XnUserID player,
+	int handId,
+	XnPoint3D projectivePoint)
+{
 	// Add new position to the history buffer
-	g_History.push_front(projectivePoint);
+	g_History[handId].push_front(projectivePoint);
 
 	// Keep size of history buffer
-	if (g_History.size() > g_nHistorySize) {
-		g_History.pop_back();
+	if (g_History[handId].size() > g_nHistorySize) {
+		g_History[handId].pop_back();
 		return true;
 	}
 	return false;
@@ -632,12 +636,12 @@ static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLef
 
 
 inline void SmudgeAtPosition(
-                             const TextureData& sceneTextureData,
-                             const int x,
-                             const int y)
+	const TextureData& sceneTextureData,
+	const int x,
+	const int y,
+	const int handId)
 {
     static bool initialized=false;
-	static IplImage* srcImage;
 	static IplImage* targetImage;
 
     static cv::Mat* imageMat;
@@ -646,38 +650,81 @@ inline void SmudgeAtPosition(
     XnUInt16 nXRes = sceneTextureData.XRes;
 	XnUInt16 nYRes = sceneTextureData.YRes;
 
-    currentBrush.setRadius(brushRadius);
-    currentBrush.setSoftness(brushSoftness / 100.0);
-    currentBrush.createImageShape();
+    brushes[handId].setRadius(brushRadius);
+    brushes[handId].setSoftness(brushSoftness / 100.0);
+    brushes[handId].createImageShape();
+
+	brushes[handId].paint(getBackgroundImage(), cvPoint(x, y));
+}
 
 
-    if(!initialized) {
-		//srcImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
-		//targetImage = cvCreateImage(cvSize(nXRes, nYRes), 8, 3);
+void DoFadeFromRight() {
+	g_fadeDirection = 1;
+	g_fadeXPosition = getBackgroundImage()->width;
+}
 
-        srcImage = getBackgroundImage();
-
-        //int depth = srcImage->depth;
-        //int channels = srcImage->nChannels;
-
-        //targetImage = cvCreateImage(cvSize(nXRes, nYRes), depth, channels);
-
-        //srcImage->imageData = (char*) sceneTextureData.data;
-        //imageMat = new cv::Mat(srcImage);
-
-        //targetImage->imageData = (char*) sceneTextureData.data;
-        //targetImageMat = new cv::Mat(targetImage);
-
-		initialized = true;
-
-        //cv::medianBlur(*imageMat, *targetImageMat, 11);
+void DoFadeFromLeft() {
+	g_fadeDirection = -1;
+	g_fadeXPosition = 0;
+}
 
 
-        //cvReleaseImage(&g_pBgImg);
-        //g_pBgImg = targetImage;
-	} else {
-        currentBrush.paint(srcImage, cvPoint(x, y));
-    }
+// Do swipe action if possible
+static void doSwipe(XnUserID player, XnPoint3D* points) {
+	// Swipe detection to change background.
+	// Search for swipe gesture on each hand.
+	for(unsigned int handId=0; handId < 2; handId++)
+	{
+		bool enoughPoints = CaptureHandMovement(player, handId, points[handId]);
+
+		if(enoughPoints) {
+			XnUInt32 nPoints = 0;
+			XnUInt32 i = 0;
+
+			// Go over all previous positions of current hand
+			std::list<XnPoint3D>::const_iterator PositionIterator;
+			for (PositionIterator = g_History[handId].begin();
+				PositionIterator != g_History[handId].end();
+				++PositionIterator, ++i)
+			{
+				// Add position to buffer
+				XnPoint3D pt(*PositionIterator);
+				g_pfPositionBuffer[3*i + 0] = pt.X;
+				g_pfPositionBuffer[3*i + 1] = pt.Y;
+				g_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
+			}
+
+			// Set color
+			// Draw buffer:
+			bool fromLeft = false;
+			bool swiped = DetectSwipe(g_nHistorySize, g_History[handId], &fromLeft);
+
+			// draw red line if swiped from left, draw
+			// blue one if swiped from right. Otherwise white.
+			if(swiped) {
+				if(fromLeft) {
+					glColor4f(1,0,0,1);
+					DoFadeFromRight();
+				} else {
+					glColor4f(0,0,1,1);
+					DoFadeFromLeft();
+				}
+				break;
+			} else {
+				glColor4f(1,1,1,1);
+			}
+
+			if(g_bDrawDebugInfo) {
+				glPointSize(2);
+				glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
+				glDrawArrays(GL_LINE_STRIP, 0, i);
+
+				glPointSize(8);
+				glDrawArrays(GL_POINTS, 0, 1);
+			}
+			glFlush();
+		}
+	}
 }
 
 
@@ -728,9 +775,45 @@ inline void DrawPlayer(
 					// Player detected, use player image
 					int offset = nY * nImdXRes * 3 + nX * 3;
 
-					pDestImage[0] = pRealWorldImage[offset + 0] & 0xF0;
-					pDestImage[1] = pRealWorldImage[offset + 1] & 0xF0;
-					pDestImage[2] = pRealWorldImage[offset + 2] & 0xF0;
+					int value = (pRealWorldImage[offset + 2] - 127) / 2;
+
+					if((pDestImage[0] + value < 255 && pDestImage[0] + value > 0)
+					&& (pDestImage[1] + value < 255 && pDestImage[1] + value > 0)
+					&& (pDestImage[2] + value < 255 && pDestImage[2] + value > 0))
+					{
+						pDestImage[0] += value;
+
+						pDestImage[1] += value;
+
+						pDestImage[2] += value;
+					} else if((pDestImage[0] + value > 255)
+					|| (pDestImage[0] + value > 255)
+					|| (pDestImage[0] + value > 255))
+					{
+						pDestImage[0] = 255;
+						pDestImage[1] = 255;
+						pDestImage[2] = 255;
+
+					} else if((pDestImage[0] + value < 0)
+					|| (pDestImage[0] + value < 0)
+					|| (pDestImage[0] + value < 0))
+					{
+						pDestImage[0] = 0;
+						pDestImage[1] = 0;
+						pDestImage[2] = 0;
+					}
+
+					/*
+					if((pDestImage[0] + value < 255 && pDestImage[0] + value > 0)
+					&& (pDestImage[1] + value < 255 && pDestImage[1] + value > 0)
+					&& (pDestImage[2] + value < 255 && pDestImage[2] + value > 0))
+					{
+						pDestImage[0] += value;
+
+						pDestImage[1] += value;
+
+						pDestImage[2] += value;
+					}*/
 				}
 
 				pLabels++;
@@ -756,7 +839,9 @@ inline void DrawPlayer(
 	glDisable(GL_TEXTURE_2D);
 
 
-	DrawUserLabels(player);
+	if(g_bDrawDebugInfo) {
+		DrawUserLabels(player);
+	}
 
 	// Sponge detection
 	{
@@ -777,73 +862,31 @@ inline void DrawPlayer(
 			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15, 60);
 			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15, 60);
 
-			sprintf(positionString, "red=%d", isRedRight);
-			glColor4f(1,1,1,1);
-			glRasterPos2i(points[1].X, points[1].Y);
-			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+			if(g_bDrawDebugInfo) {
+				sprintf(positionString, "red=%d", isRedRight);
+				glColor4f(1,1,1,1);
+				glRasterPos2i(points[1].X, points[1].Y);
+				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 
-			sprintf(positionString, "red=%d", isRedLeft);
-			glRasterPos2i(points[0].X, points[0].Y);
-			glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
-
-			// Swipe detection to change background
-			{
-				bool enoughPoints = CaptureHandMovement(player, points[1]);
-
-				if(enoughPoints) {
-					XnUInt32 nPoints = 0;
-					XnUInt32 i = 0;
-
-					// Go over all previous positions of current hand
-					std::list<XnPoint3D>::const_iterator PositionIterator;
-					for (PositionIterator = g_History.begin();
-						PositionIterator != g_History.end();
-						++PositionIterator, ++i)
-					{
-						// Add position to buffer
-						XnPoint3D pt(*PositionIterator);
-						g_pfPositionBuffer[3*i + 0] = pt.X;
-						g_pfPositionBuffer[3*i + 1] = pt.Y;
-						g_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
-					}
-
-					// Set color
-					// Draw buffer:
-					bool fromLeft = false;
-					bool swiped = DetectSwipe(g_nHistorySize, g_History, &fromLeft);
-
-					// draw red line if swiped from left, draw
-					// blue one if swiped from right. Otherwise white.
-					if(swiped) {
-						if(fromLeft) {
-							glColor4f(1,0,0,1);
-						} else {
-							glColor4f(0,0,1,1);
-						}
-					} else {
-						glColor4f(1,1,1,1);
-					}
-
-					glPointSize(2);
-					glVertexPointer(3, GL_FLOAT, 0, g_pfPositionBuffer);
-					glDrawArrays(GL_LINE_STRIP, 0, i);
-
-					glPointSize(8);
-					glDrawArrays(GL_POINTS, 0, 1);
-					glFlush();
-
-					//g_History.clear();
-				}
+				sprintf(positionString, "red=%d", isRedLeft);
+				glRasterPos2i(points[0].X, points[0].Y);
+				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 			}
 
-            SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y);
+			doSwipe(player, points);
+
+			if(true || isRedLeft) {
+				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
+			}
+
+			if(true || isRedRight) {
+				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
+			}
 		}
-
-
 	}
 
 	// Draw skeleton of user
-	if (player != 0)
+	if (player != 0 && g_bDrawDebugInfo)
 	{
 		DrawPlayerSkeleton(player);
 	}
