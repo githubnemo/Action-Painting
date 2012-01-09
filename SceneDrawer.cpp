@@ -57,6 +57,7 @@ std::list<IplImage*>::const_iterator g_currentBackgroundImage;
 IplImage* g_pBgImg;
 GLfloat g_pfTexCoords[8];
 
+
 // Swipe detection ಠ_ಠ
 // g_nHistorySize is the amount of points to capture
 std::map<int, std::list<XnPoint3D> > g_History;
@@ -71,7 +72,11 @@ int g_fadeDirection = 1; // -1 from left, 0 none, +1 from right
 int g_fadeXPosition = 0; // Value of left/right edge of new image
 int g_fadeStep = 50;	 // How many pixels fade per step
 
-bool g_bDrawDebugInfo = false;
+
+bool g_bDrawDebugInfo = true;
+
+
+/* Brush settings */
 
 // Smudge Algorithm parameters
 int brushRadius = 10;       // Radius of the brush
@@ -90,6 +95,8 @@ int brushSoftness = 50;
 int smudgeBufferSize = 4;
 
 Brush brushes[2];
+
+
 
 struct TextureData {
 	unsigned char*	data;
@@ -524,38 +531,38 @@ inline XnLabel* SmoothenUserPixels(
 }
 
 // Check the kernel sized maskSize*maskSize around point p for green
-// color. If the red amount is high enough (>minPercent) true is returned.
-static bool checkKernelForRed(
-		const XnLabel* labels,
+// color. If the green amount is high enough (>minPercent) true is returned.
+static bool checkKernelForGreen(
 		const TextureData& texData,
+		const XnUInt8* img,
 		XnPoint3D p,
 		short maskSize,
 		short minPercent,
 		bool print)
 {
-	unsigned char* img = texData.data;
-	int red = 0, other = 1;
+	int green = 0, other = 1;
 
 	for(int i=-(maskSize/2); i < maskSize/2; i++) {
-		for(int j=-(maskSize/2); j < maskSize/2; j++) {
-			int yoffset = texData.width*3*((int)p.Y+i);
+		int yoffset = texData.XRes * ((int)p.Y+i) * 3;
 
-			// FIXME bounds
-			if((int)p.X+j < texData.width && (int)p.Y+i < texData.height
-				&& labels[yoffset + (int)p.X+j])
+		for(int j=-(maskSize/2); j < maskSize/2; j++) {
+			int offset = yoffset + ((int)p.X + j) * 3;
+
+			if((int)p.X+j < texData.XRes && (int)p.Y+i < texData.YRes)
 			{
-				unsigned char *current = &img[yoffset + ((int)p.X+j) * 3];
+				const XnUInt8* current = &img[offset];
+
 				other += current[0] + current[1] + current[2];
-				red += current[0];
+				green += current[1];
 			}
 		}
 	}
 
 	if(print)
-		printf("%d, %d => %lf (%d)\n", red, other, (double)red/other * 100,
-			(double)red/other * 100 > 40);
+		printf("%d, %d => %lf (%d)\n", green, other, (double)green/other * 100,
+			(double)green/other * 100 > minPercent);
 
-	return (double)red/other * 100 > minPercent;
+	return (double)green/other * 100 > minPercent;
 }
 
 
@@ -613,7 +620,10 @@ static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLef
 
         if (abs((point.Y - y1)) > MaxYDelta)
             return false;
+
+		// FIXME fix code below
 		continue;
+
         float result =
             (y2 - y1) * point.X +
             (x2 - x1) * point.Y +
@@ -829,7 +839,6 @@ inline void DrawPlayer(
 	}
 
 
-
 	glBindTexture(GL_TEXTURE_2D, sceneTextureData.id);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, sceneTextureData.width,
 		sceneTextureData.height, 0,	GL_RGB, GL_UNSIGNED_BYTE,
@@ -837,6 +846,7 @@ inline void DrawPlayer(
 
 	// Display the OpenGL texture map
 	glColor4f(1,1,1,1);
+
 
 	glEnable(GL_TEXTURE_2D);
 	DrawTexture(nXRes,nYRes,0,0);
@@ -846,6 +856,7 @@ inline void DrawPlayer(
 	if(g_bDrawDebugInfo) {
 		DrawUserLabels(player);
 	}
+
 
 	// Sponge detection
 	{
@@ -859,35 +870,44 @@ inline void DrawPlayer(
 		if(rightHandJoint.fConfidence >= 0.5 && leftHandJoint.fConfidence >= 0.5) {
 			XnPoint3D points[2] = {leftHandJoint.position, rightHandJoint.position};
 			char positionString[25];
-			bool isRedLeft = false, isRedRight = false;
+			bool isGreenLeft = false, isGreenRight = false;
 
 			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
 
-			isRedLeft = checkKernelForRed(pOrgLabels, sceneTextureData, points[0], 15, 60, false);
-			isRedRight = checkKernelForRed(pOrgLabels, sceneTextureData, points[1], 15, 60, true);
+			isGreenLeft = checkKernelForGreen(sceneTextureData,
+					imd.Data(), points[0], 15, 32, false);
+			isGreenRight = checkKernelForGreen(sceneTextureData,
+					imd.Data(), points[1], 15, 32, false);
 
 			if(g_bDrawDebugInfo) {
-				sprintf(positionString, "red=%d", isRedRight);
+				sprintf(positionString, "green=%d", isGreenRight);
 				glColor4f(1,1,1,1);
 				glRasterPos2i(points[1].X, points[1].Y);
 				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 
-				sprintf(positionString, "red=%d", isRedLeft);
+				sprintf(positionString, "green=%d", isGreenLeft);
 				glRasterPos2i(points[0].X, points[0].Y);
 				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 			}
 
 			doSwipe(player, points);
 
-			if(true || isRedLeft) {
+			// TODO reset last point of brush so that gaps are not smudged.
+			// Imagine you smuding at point A then disabling smudge, going to
+			// point B and smudging again. What happens is, that the line
+			// between A and B is smudged, because A is the last known point.
+
+			if(isGreenLeft) {
 				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
 			}
 
-			if(true || isRedRight) {
+			if(isGreenRight) {
 				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
 			}
 		}
 	}
+
+
 
 	// Draw skeleton of user
 	if (player != 0 && g_bDrawDebugInfo)
