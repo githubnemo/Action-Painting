@@ -1,8 +1,5 @@
-* Get hand tracking working
-	* Drawing on canvas
-	* Nice effect
-* Filter player image (oil filter)
 * Resize player image according to Z-Axis
 * Limit player count to one
-* Swipe detection
 (* Path limitation (according to polygon or map))
+* Reset button for the whole application
+* Reset the images after player is lost
