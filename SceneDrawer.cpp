@@ -63,7 +63,7 @@ GLfloat g_pfTexCoords[8];
 // g_nHistorySize is the amount of points to capture
 std::map<int, std::list<XnPoint3D> > g_History;
 XnFloat* g_pfPositionBuffer;
-int g_nHistorySize = 15;
+int g_nHistorySize = 30;
 // See DetectSwipe for details of the following 2 variables
 int g_swipeMinYDelta = 100;
 int g_swipeMinXDelta = 250;
@@ -606,6 +606,29 @@ static bool CaptureHandMovement(
 }
 
 
+
+static void CaptureSomeHandMovements(XnUserID player, int times) {
+	for(int i=0; i < times; i++) {
+		XnSkeletonJointPosition rightHandJoint, leftHandJoint;
+
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_LEFT_HAND, leftHandJoint);
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_RIGHT_HAND, rightHandJoint);
+
+		if(rightHandJoint.fConfidence >= 0.5 && leftHandJoint.fConfidence >= 0.5) {
+			XnPoint3D points[] = {leftHandJoint.position, rightHandJoint.position};
+
+			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
+
+			CaptureHandMovement(player, 0, points[0]);
+			CaptureHandMovement(player, 1, points[1]);
+		}
+	}
+}
+
+
+
 // Stores the swipe direction in fromLeft parameter if it's not NULL
 static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLeft)
 {
@@ -877,6 +900,10 @@ inline void DrawPlayer(
 	if(g_bDrawDebugInfo) {
 		DrawUserLabels(player);
 	}
+
+
+	// Just look for some hand movements
+	CaptureSomeHandMovements(player, 2);
 
 
 	// Sponge detection
