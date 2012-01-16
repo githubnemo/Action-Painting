@@ -3,3 +3,7 @@
 (* Path limitation (according to polygon or map))
 * Reset button for the whole application
 * Reset the images after player is lost
+* Farbverlauf auf Boden
+* Hand movement smoothing
+* Check if player is dead
+* Illuminate sponge
