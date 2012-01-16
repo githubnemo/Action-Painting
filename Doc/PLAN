@@ -1,5 +1,4 @@
-* Resize player image according to Z-Axis
-* Limit player count to one
+(* Resize player image according to Z-Axis)
 (* Path limitation (according to polygon or map))
 * Reset button for the whole application
 * Reset the images after player is lost
@@ -7,3 +6,5 @@
 * Hand movement smoothing
 * Check if player is dead
 * Illuminate sponge
+* Mail profs materials needed
+* Recognize every user as player? => Speed up player change
