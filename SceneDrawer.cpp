@@ -37,6 +37,7 @@
 #include "opengles.h"
 #endif
 
+#include <cmath>
 #include <cv.h>
 #include <highgui.h>
 
@@ -566,6 +567,17 @@ static bool checkKernelForGreen(
 }
 
 
+double CosineInterpolate(
+   double y1,double y2,
+   double mu)
+{
+   double mu2;
+
+   mu2 = (1-cos(mu*M_PI))/2;
+   return(y1*(1-mu2)+y2*mu2);
+}
+
+
 
 // Return true if buffer has reached size limit
 static bool CaptureHandMovement(
@@ -573,11 +585,20 @@ static bool CaptureHandMovement(
 	int handId,
 	XnPoint3D projectivePoint)
 {
+
+	size_t historySize = g_History[handId].size();
+
+	if(historySize > 0) {
+		double sY = CosineInterpolate(g_History[handId].back().Y, projectivePoint.Y, 1);
+		projectivePoint.Y = sY;
+	}
+
+
 	// Add new position to the history buffer
 	g_History[handId].push_front(projectivePoint);
 
 	// Keep size of history buffer
-	if (g_History[handId].size() > g_nHistorySize) {
+	if (historySize > g_nHistorySize) {
 		g_History[handId].pop_back();
 		return true;
 	}
