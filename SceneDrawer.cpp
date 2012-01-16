@@ -944,12 +944,14 @@ inline void DrawPlayer(
 			// Imagine you smuding at point A then disabling smudge, going to
 			// point B and smudging again. What happens is, that the line
 			// between A and B is smudged, because A is the last known point.
+			//
+			// One could simply clear the point buffer?
 
-			if(isGreenLeft) {
+			if(true || isGreenLeft) {
 				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
 			}
 
-			if(isGreenRight) {
+			if(true || isGreenRight) {
 				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
 			}
 		}
