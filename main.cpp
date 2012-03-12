@@ -220,7 +220,7 @@ void glutIdle (void)
 
 void glutKeyboard (unsigned char key, int x, int y)
 {
-	static short fullscreen = 0;
+	static short fullscreen = 1;
 
 	switch (key)
 	{
@@ -446,6 +446,8 @@ int main(int argc, char **argv)
 
 
 	glInit(&argc, argv);
+
+	glutFullScreen();
 
 	/* Debug effect windows
 	cvNamedWindow("test image", CV_WINDOW_AUTOSIZE);
