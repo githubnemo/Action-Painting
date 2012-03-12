@@ -596,6 +596,7 @@ static bool CaptureHandMovement(
 		g_History[handId].pop_back();
 		return true;
 	}
+
 	return false;
 }
 
@@ -622,6 +623,10 @@ static void CaptureSomeHandMovements(XnUserID player, int times) {
 }
 
 
+/**
+ * Computes a function f(x) from the given p0 and pN
+ * and returns the rounded up y value of the given x.
+ */
 static int calcF(double x, XnPoint3D &p0, XnPoint3D &pN) {
 	double m = (pN.Y - p0.Y) / (pN.X - p0.X);
 	double b = -m * p0.X + p0.Y;
@@ -936,6 +941,7 @@ inline void DrawPlayer(
 				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 			}
 
+			// TODO only if red side of sponge is shown
 			doSwipe(player, points);
 
 			// TODO reset last point of brush so that gaps are not smudged.
