@@ -35,9 +35,23 @@ nullstring :=
 space := $(nullstring)
 OUTPUT_DIR = $(shell dirname $(OUTPUT_FILE))
 DATA_FOLDER = $(OUTPUT_DIR)/Data
-DATA_FILES = 1.jpg \
-			 2.jpg \
-			 3.jpg \
+DATA_FILES = AlfredThompsonBercher.tiff.jpg \
+			JanBrueghel.tiff.jpg \
+			AndreDerain.tiff.jpg \
+			JoaquinSorollaYBastida.tiff.jpg \
+			Canaletto.tiff.jpg \
+			MartinJohnsonHeade.tiff.jpg \
+			CharlesCamoin.tiff.jpg \
+			MartinRicoyOrtega.tiff.jpg \
+			EmilNolde.tiff.jpg \
+			MauricedeVlaminck.tiff.jpg \
+			EmilNolde02.tiff.jpg \
+			PierreAugusteRenoir.tiff.jpg \
+			GeorgesBraque.tiff.jpg \
+			ThomasCole.tiff.jpg \
+			GiuseppeZocchi.tiff.jpg \
+			WilliamMerritChase.tiff.jpg \
+			HenriMatisse.tiff.jpg \
 			 Sample-Players.xml \
 			 backgrounds.cfg
 
