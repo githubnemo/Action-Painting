@@ -9,7 +9,7 @@
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include "SceneDrawer.h"
-
+#include "util.h"
 
 #include <XnVNite.h>
 #include <XnVPointControl.h>

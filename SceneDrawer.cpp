@@ -44,6 +44,8 @@
 #include "SmudgeEffect/smudge_util.h"
 #include "SmudgeEffect/Brush.h"
 
+#include "util.h"
+
 extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
@@ -192,17 +194,6 @@ XnFloat Colors[][3] =
 	{1,1,1}
 };
 XnUInt32 nColors = 10;
-
-
-static void glPrintString(void *font, char *str)
-{
-	size_t i,l = strlen(str);
-
-	for(i=0; i<l; i++)
-	{
-		glutBitmapCharacter(font,*str++);
-	}
-}
 
 
 // Draws part of the player's skeleton, conneting two parts with a line
