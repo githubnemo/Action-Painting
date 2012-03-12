@@ -34,7 +34,6 @@ xn::SkeletonCapability* g_SkeletonCap;
 XnVSessionManager* g_pSessionManager;
 XnVFlowRouter* g_pFlowRouter;
 
-XnUserID g_nPlayer = 0; // XXX deprecated
 XnBool g_bCalibrated = FALSE;
 XnBool g_bNeedPose = FALSE;
 XnChar g_strPose[20] = "";
@@ -194,25 +193,12 @@ void glutDisplay (void)
 			xn::ImageMetaData imageMD;
 
 			g_DepthGenerator.GetMetaData(depthMD);
-			g_UserGenerator.GetUserPixels(g_nPlayer, sceneMD);
+			g_UserGenerator.GetUserPixels(0, sceneMD);
 			g_ImageGenerator.GetMetaData(imageMD);
 
 			DrawScene(depthMD, sceneMD, imageMD);
 		}
 	}
-
-	/*
-	if (g_nPlayer != 0)
-	{
-		XnPoint3D com;
-		g_UserGenerator.GetCoM(g_nPlayer, com);
-		if (com.Z == 0)
-		{
-			g_nPlayer = 0;
-			FindPlayer();
-		}
-	}
-	*/
 
 	#ifdef USE_GLUT
 	glutSwapBuffers();

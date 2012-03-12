@@ -47,7 +47,6 @@
 extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
-extern XnUserID g_nPlayer;
 extern std::list<IplImage*> g_backgroundImages;
 
 // g_currentBackgroundImage is only a position indicator which background
