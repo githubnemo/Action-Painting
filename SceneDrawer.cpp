@@ -64,8 +64,8 @@ std::map<int, std::list<XnPoint3D> > g_History;
 XnFloat* g_pfPositionBuffer;
 int g_nHistorySize = 30;
 // See DetectSwipe for details of the following 2 variables
-int g_swipeMinYDelta = 100;
-int g_swipeMinXDelta = 250;
+int g_swipeMaxYDelta = 100;
+int g_swipeMinWidth = 150;
 // swipe to right: image fades from left (fadeDirection = -1)
 // swipte to left: image fades from right (fadeDirection = 1)
 int g_fadeDirection = 1; // -1 from left, 0 none, +1 from right
@@ -622,29 +622,49 @@ static void CaptureSomeHandMovements(XnUserID player, int times) {
 }
 
 
+static int calcF(double x, XnPoint3D &p0, XnPoint3D &pN) {
+	double m = (pN.Y - p0.Y) / (pN.X - p0.X);
+	double b = -m * p0.X + p0.Y;
+
+	return m*x + b;
+}
 
 // Stores the swipe direction in fromLeft parameter if it's not NULL
 static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLeft)
 {
-    int MinXDelta = g_swipeMinXDelta; // required horizontal distance
-    int MaxYDelta = g_swipeMinYDelta; // max mount of vertical variation
+    int MinWidth = g_swipeMinWidth; // required horizontal distance
+    int MaxYDelta = g_swipeMaxYDelta; // max mount of vertical variation
 
-    float x1 = (*(points.begin())).X;
-    float y1 = (*(points.begin())).Y;
-    float x2 = (*(points.end())).X;
-    float y2 = (*(points.end())).Y;
+	XnPoint3D begin = *points.begin();
+	XnPoint3D end = *(--points.end());
+
+    float x1 = begin.X;
+    float y1 = begin.Y;
+    float x2 = end.X;
+    float y2 = end.Y;
+
+	XnPoint3D p0;
+	XnPoint3D pN;
+
+	if(x1 < x2) {
+		p0 = begin;
+		pN = end;
+	} else {
+		p0 = end;
+		pN = begin;
+	}
 
 #if 0
-	cout << "x1: " << x1 << endl;
-	cout << "y1: " << y1 << endl;
-	cout << "x2: " << x2 << endl;
-	cout << "y2: " << y2 << endl;
+	std::cout << "x1: " << x1 << std::endl;
+	std::cout << "y1: " << y1 << std::endl;
+	std::cout << "x2: " << x2 << std::endl;
+	std::cout << "y2: " << y2 << std::endl;
 #endif
 
-    if (abs(x1 - x2) < MinXDelta)
+    if (abs(x1 - x2) < MinWidth)
         return false;
 
-    if (y1 - y2 > MaxYDelta)
+    if (abs(y1 - y2) > MaxYDelta)
         return false;
 
     //for (int i = 1; i < LineSize - 2; i++)
@@ -656,27 +676,11 @@ static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLef
     {
 		XnPoint3D point(*PositionIterator);
 
-        if (abs((point.Y - y1)) > MaxYDelta)
-            return false;
+		int okY = calcF(point.X, p0, pN);
 
-		// FIXME fix code below
-		continue;
-
-        float result =
-            (y2 - y1) * point.X +
-            (x2 - x1) * point.Y +
-            (x1 * y2 - x2 * y1);
-
-		//cout << "result: " << result << endl;
-
-		// This should be probably the other way around.
-		// result > |result| is never true. Negative values
-		// (the only way for result to be different than |result|)
-		// are never greater than a positive value.
-        if (result < abs(result))
-        {
-            return false;
-        }
+		if(abs(point.Y - okY) > MaxYDelta) {
+			return false;
+		}
     }
 
 	if(fromLeft != NULL) {
