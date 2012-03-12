@@ -92,6 +92,10 @@ XnBool g_bQuit = false;
 }
 
 
+static void resetBackgroundImages(void);
+static bool loadBackgroundImages(const char* path);
+
+
 void CleanupExit()
 {
 	exit (1);
@@ -118,22 +122,7 @@ void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void
 {
 	printf("Lost user %d\n", user);
 
-	std::list<IplImage*>::iterator iter;
-	std::list<IplImage*>::const_iterator iter2;
-
-	for(iter = g_backgroundImages.begin(),
-		iter2 = g_backgroundImagesOriginal.begin();
-		iter != g_backgroundImages.end();
-		iter++, iter2++)
-	{
-		IplImage* org = *iter2;
-		IplImage* toRelease = *iter;
-		IplImage* copy = cvCloneImage(org);
-
-		cvReleaseImage(&toRelease);
-
-		g_backgroundImages.insert(iter, copy);
-	}
+	resetBackgroundImages();
 }
 
 
@@ -337,7 +326,29 @@ void XN_CALLBACK_TYPE GestureProgressHandler(
 }
 
 
-bool loadBackgroundImages(const char* path) {
+// Replace all background images with their original ones.
+// All modifications will be lost.
+static void resetBackgroundImages(void) {
+	std::list<IplImage*>::iterator iter;
+	std::list<IplImage*>::const_iterator iter2;
+
+	for(iter = g_backgroundImages.begin(),
+		iter2 = g_backgroundImagesOriginal.begin();
+		iter != g_backgroundImages.end();
+		iter++, iter2++)
+	{
+		IplImage* org = *iter2;
+		IplImage* toRelease = *iter;
+		IplImage* copy = cvCloneImage(org);
+
+		cvReleaseImage(&toRelease);
+
+		g_backgroundImages.insert(iter, copy);
+	}
+}
+
+
+static bool loadBackgroundImages(const char* path) {
 	std::string line;
 	std::ifstream myfile(path);
 
