@@ -75,7 +75,7 @@ int g_fadeXPosition = 0; // Value of left/right edge of new image
 int g_fadeStep = 50;	 // How many pixels fade per step
 
 
-bool g_bDrawDebugInfo = true;
+bool g_bDrawDebugInfo = false;
 
 
 /* Brush settings */
