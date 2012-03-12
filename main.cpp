@@ -22,6 +22,9 @@
 #include <highgui.h> // Debug
 #include <unistd.h>  // access(2)
 
+#include <signal.h>
+#include <sys/time.h> // fps timer (setitimer)
+
 xn::Context g_Context;
 xn::ScriptNode g_ScriptNode;
 xn::DepthGenerator g_DepthGenerator;
@@ -37,6 +40,9 @@ XnVFlowRouter* g_pFlowRouter;
 XnBool g_bCalibrated = FALSE;
 XnBool g_bNeedPose = FALSE;
 XnChar g_strPose[20] = "";
+
+int g_nFps = 0;
+int g_nDisplayedFps = 0;
 
 std::list<IplImage*> g_backgroundImages;
 
@@ -163,9 +169,18 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton,
 }
 
 
+void fps_reset_callback(int i) {
+	g_nDisplayedFps = g_nFps;
+	g_nFps = 0;
+}
+
+
 // this function is called each frame
 void glutDisplay (void)
 {
+	static char fpsString[40] = "";
+
+	g_nFps++;
 
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -173,7 +188,6 @@ void glutDisplay (void)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-
 
 	XnMapOutputMode mode;
 	g_DepthGenerator.GetMapOutputMode(mode);
@@ -197,6 +211,13 @@ void glutDisplay (void)
 
 			DrawScene(depthMD, sceneMD, imageMD);
 		}
+	}
+
+	if(g_bDrawDebugInfo) {
+		sprintf(fpsString, "%d FPS", g_nDisplayedFps);
+		glColor4f(1,1,1,1);
+		glRasterPos2i(100, 100);
+		glPrintString(GLUT_BITMAP_HELVETICA_18, fpsString);
 	}
 
 	#ifdef USE_GLUT
@@ -444,6 +465,19 @@ int main(int argc, char **argv)
 	CHECK_RC(rc, "StartGenerating");
 
 
+	// FPS timer
+	struct itimerval tout_val;
+
+	tout_val.it_interval.tv_sec = 1;
+	tout_val.it_interval.tv_usec = 0;
+	tout_val.it_value.tv_sec = 1;
+	tout_val.it_value.tv_usec = 0;
+	setitimer(ITIMER_REAL, &tout_val, 0);
+
+	signal(SIGALRM, fps_reset_callback);
+
+
+	// Start drawing
 	glInit(&argc, argv);
 
 	/* Debug effect windows
