@@ -2,6 +2,7 @@ OSTYPE := $(shell uname -s)
 
 SRC_FILES = \
 	main.cpp \
+	util.cpp \
 	SceneDrawer.cpp \
 	SmudgeEffect/Brush.cpp \
 	SmudgeEffect/smudge_util.cpp

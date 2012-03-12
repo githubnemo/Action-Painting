@@ -9,7 +9,7 @@
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include "SceneDrawer.h"
-
+#include "util.h"
 
 #include <XnVNite.h>
 #include <XnVPointControl.h>
@@ -21,6 +21,9 @@
 #include <cv.h>		 // Loading background images
 #include <highgui.h> // Debug
 #include <unistd.h>  // access(2)
+
+#include <signal.h>
+#include <sys/time.h> // fps timer (setitimer)
 
 xn::Context g_Context;
 xn::ScriptNode g_ScriptNode;
@@ -38,7 +41,11 @@ XnBool g_bCalibrated = FALSE;
 XnBool g_bNeedPose = FALSE;
 XnChar g_strPose[20] = "";
 
+int g_nFps = 0;
+int g_nDisplayedFps = 0;
+
 std::list<IplImage*> g_backgroundImages;
+std::list<IplImage*> g_backgroundImagesOriginal;
 
 
 #ifdef USE_GLUT
@@ -110,6 +117,23 @@ void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void*
 void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
 	printf("Lost user %d\n", user);
+
+	std::list<IplImage*>::iterator iter;
+	std::list<IplImage*>::const_iterator iter2;
+
+	for(iter = g_backgroundImages.begin(),
+		iter2 = g_backgroundImagesOriginal.begin();
+		iter != g_backgroundImages.end();
+		iter++, iter2++)
+	{
+		IplImage* org = *iter2;
+		IplImage* toRelease = *iter;
+		IplImage* copy = cvCloneImage(org);
+
+		cvReleaseImage(&toRelease);
+
+		g_backgroundImages.insert(iter, copy);
+	}
 }
 
 
@@ -163,9 +187,18 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton,
 }
 
 
+void fps_reset_callback(int i) {
+	g_nDisplayedFps = g_nFps;
+	g_nFps = 0;
+}
+
+
 // this function is called each frame
 void glutDisplay (void)
 {
+	static char fpsString[40] = "";
+
+	g_nFps++;
 
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -174,11 +207,9 @@ void glutDisplay (void)
 	glPushMatrix();
 	glLoadIdentity();
 
-
 	XnMapOutputMode mode;
 	g_DepthGenerator.GetMapOutputMode(mode);
 	glOrtho(0, mode.nXRes, mode.nYRes, 0, -1.0, 1.0);
-
 
 	glDisable(GL_TEXTURE_2D);
 
@@ -198,6 +229,13 @@ void glutDisplay (void)
 
 			DrawScene(depthMD, sceneMD, imageMD);
 		}
+	}
+
+	if(g_bDrawDebugInfo) {
+		sprintf(fpsString, "%d FPS", g_nDisplayedFps);
+		glColor4f(1,1,1,1);
+		glRasterPos2i(100, 100);
+		glPrintString(GLUT_BITMAP_HELVETICA_18, fpsString);
 	}
 
 	#ifdef USE_GLUT
@@ -336,6 +374,7 @@ bool loadBackgroundImages(const char* path) {
 			}
 
 			g_backgroundImages.push_front(img);
+			g_backgroundImagesOriginal.push_front(cvCloneImage(img));
 		}
 		myfile.close();
 		return true;
@@ -445,6 +484,19 @@ int main(int argc, char **argv)
 	CHECK_RC(rc, "StartGenerating");
 
 
+	// FPS timer
+	struct itimerval tout_val;
+
+	tout_val.it_interval.tv_sec = 1;
+	tout_val.it_interval.tv_usec = 0;
+	tout_val.it_value.tv_sec = 1;
+	tout_val.it_value.tv_usec = 0;
+	setitimer(ITIMER_REAL, &tout_val, 0);
+
+	signal(SIGALRM, fps_reset_callback);
+
+
+	// Start drawing
 	glInit(&argc, argv);
 
 	glutFullScreen();
