@@ -2,8 +2,6 @@
 (* Path limitation (according to polygon or map))
 (* Farbverlauf auf Boden)
 
-* Reset the images after player is lost
-* Resize whole image to 1024x768
 * Hand movement smoothing
 * Nicer effect for image swapping
-* Reset button for the whole application
+* Sponge testing
