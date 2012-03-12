@@ -34,8 +34,10 @@ xn::SkeletonCapability* g_SkeletonCap;
 XnVSessionManager* g_pSessionManager;
 XnVFlowRouter* g_pFlowRouter;
 
-XnUserID g_nPlayer = 0;
+XnUserID g_nPlayer = 0; // XXX deprecated
 XnBool g_bCalibrated = FALSE;
+XnBool g_bNeedPose = FALSE;
+XnChar g_strPose[20] = "";
 
 std::list<IplImage*> g_backgroundImages;
 
@@ -114,28 +116,17 @@ XnBool AssignPlayer(XnUserID user)
 
 void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
-	if(access(CALIBRATION_PATH, R_OK) == 0) {
-		// Load calibration data from file
-		XnStatus s;
+	printf("New User %d\n", user);
 
-		s = g_SkeletonCap->LoadCalibrationDataFromFile(user, CALIBRATION_PATH);
-
-		if(s == XN_STATUS_OK) {
-			g_SkeletonCap->StartTracking(user);
-			g_bCalibrated = TRUE;
-		}
-
-		xnPrintError(s, "NewUser Load from file");
-	}
-
-	if (!g_bCalibrated) // check on player0 is enough
+	// New user found
+	if (g_bNeedPose)
 	{
-		printf("Look for pose\n");
-		g_UserGenerator.GetPoseDetectionCap().StartPoseDetection("Psi", user);
-		return;
+		g_UserGenerator.GetPoseDetectionCap().StartPoseDetection(g_strPose, user);
 	}
-
-	AssignPlayer(user);
+	else
+	{
+		g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
+	}
 }
 
 
@@ -168,10 +159,6 @@ void LostPlayer()
 void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
 	printf("Lost user %d\n", user);
-	if (g_nPlayer == user)
-	{
-		LostPlayer();
-	}
 }
 
 
@@ -179,8 +166,8 @@ void XN_CALLBACK_TYPE PoseDetected(xn::PoseDetectionCapability& pose,
 		const XnChar* strPose, XnUserID user, void* cxt)
 {
 	printf("Found pose \"%s\" for user %d\n", strPose, user);
-	g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
 	g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(user);
+	g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
 }
 
 
@@ -188,31 +175,6 @@ void XN_CALLBACK_TYPE CalibrationStarted(xn::SkeletonCapability& skeleton,
 		XnUserID user, void* cxt)
 {
 	printf("Calibration started\n");
-}
-
-
-void XN_CALLBACK_TYPE CalibrationEnded(xn::SkeletonCapability& skeleton,
-		XnUserID user, XnBool bSuccess, void* cxt)
-{
-	printf("Calibration done [%d] %ssuccessfully\n", user, bSuccess?"":"un");
-	if (bSuccess)
-	{
-		if (!g_bCalibrated)
-		{
-			g_SkeletonCap->SaveCalibrationData(user, 0);
-			g_SkeletonCap->SaveCalibrationDataToFile(user, CALIBRATION_PATH);
-
-			g_nPlayer = user;
-			g_SkeletonCap->StartTracking(user);
-			g_bCalibrated = TRUE;
-		}
-
-		XnUserID aUsers[10];
-		XnUInt16 nUsers = 10;
-		g_UserGenerator.GetUsers(aUsers, nUsers);
-		for (int i = 0; i < nUsers; ++i)
-			g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(aUsers[i]);
-	}
 }
 
 
@@ -224,21 +186,28 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton,
 
 	if (eStatus == XN_CALIBRATION_STATUS_OK)
 	{
-		if (!g_bCalibrated)
+		// Calibration succeeded
+		printf("Calibration complete, start tracking user %d\n", user);
+		g_UserGenerator.GetSkeletonCap().StartTracking(user);
+	}
+	else
+	{
+		// Calibration failed
+		printf("Calibration failed for user %d\n", user);
+        if(eStatus==XN_CALIBRATION_STATUS_MANUAL_ABORT)
+        {
+            printf("Manual abort occured, stop attempting to calibrate!");
+            return;
+        }
+
+		if (g_bNeedPose)
 		{
-			g_SkeletonCap->SaveCalibrationData(user, 0);
-			g_SkeletonCap->SaveCalibrationDataToFile(user, CALIBRATION_PATH);
-
-			g_nPlayer = user;
-			g_UserGenerator.GetSkeletonCap().StartTracking(user);
-			g_bCalibrated = TRUE;
+			g_UserGenerator.GetPoseDetectionCap().StartPoseDetection(g_strPose, user);
 		}
-
-		XnUserID aUsers[10];
-		XnUInt16 nUsers = 10;
-		g_UserGenerator.GetUsers(aUsers, nUsers);
-		for (int i = 0; i < nUsers; ++i)
-			g_UserGenerator.GetPoseDetectionCap().StopPoseDetection(aUsers[i]);
+		else
+		{
+			g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
+		}
 	}
 }
 
@@ -276,7 +245,7 @@ void glutDisplay (void)
 			g_UserGenerator.GetUserPixels(g_nPlayer, sceneMD);
 			g_ImageGenerator.GetMetaData(imageMD);
 
-			DrawScene(depthMD, sceneMD, imageMD, g_nPlayer);
+			DrawScene(depthMD, sceneMD, imageMD);
 		}
 	}
 
@@ -477,6 +446,19 @@ int main(int argc, char **argv)
 
 	g_SkeletonCap = new xn::SkeletonCapability(g_UserGenerator.GetSkeletonCap());
 	g_SkeletonCap->SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
+
+
+	if (g_UserGenerator.GetSkeletonCap().NeedPoseForCalibration())
+	{
+		g_bNeedPose = TRUE;
+
+		if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_POSE_DETECTION))
+		{
+			printf("Pose required, but not supported\n");
+			return XN_STATUS_ERROR;
+		}
+	}
+
 
 
 	// Orientate the depth screen at the real world image so there's

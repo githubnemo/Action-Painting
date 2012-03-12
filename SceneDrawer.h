@@ -8,7 +8,7 @@
 #include <XnVPointControl.h>
 
 void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
-	const xn::ImageMetaData& imd, XnUserID player);
+	const xn::ImageMetaData& imd);
 
 void DoFadeFromLeft();
 

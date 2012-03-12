@@ -209,11 +209,6 @@ static void glPrintString(void *font, char *str)
 // Draws part of the player's skeleton, conneting two parts with a line
 static void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 {
-	if (!g_UserGenerator.GetSkeletonCap().IsCalibrated(player))
-	{
-		printf("not calibrated!\n");
-		return;
-	}
 	if (!g_UserGenerator.GetSkeletonCap().IsTracking(player))
 	{
 		printf("not tracked!\n");
@@ -960,7 +955,7 @@ inline void DrawPlayer(
 
 
 	// Draw skeleton of user
-	if (player != 0 && g_bDrawDebugInfo)
+	if (g_bDrawDebugInfo)
 	{
 		DrawPlayerSkeleton(player);
 	}
@@ -970,8 +965,7 @@ inline void DrawPlayer(
 void DrawScene(
 	const xn::DepthMetaData& dmd,
 	const xn::SceneMetaData& smd,
-	const xn::ImageMetaData& imd,
-	XnUserID player)
+	const xn::ImageMetaData& imd)
 {
 	static bool bInitialized = false;
 	static TextureData sceneTextureData;
@@ -992,7 +986,13 @@ void DrawScene(
 
 	DrawBackground(sceneTextureData);
 
-	DrawPlayer(sceneTextureData, smd, imd, player);
+	// Fetch player
+	XnUserID aUsers[1];
+	XnUInt16 nUsers = 1;
+
+	g_UserGenerator.GetUsers(aUsers, nUsers);
+
+	DrawPlayer(sceneTextureData, smd, imd, aUsers[0]);
 }
 
 
