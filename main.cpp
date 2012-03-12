@@ -92,28 +92,6 @@ void CleanupExit()
 }
 
 
-XnBool AssignPlayer(XnUserID user)
-{
-	if (g_nPlayer != 0)
-		return FALSE;
-
-	XnPoint3D com;
-	g_UserGenerator.GetCoM(user, com);
-
-/*	printf("%lf == 0?\n", com.Z);
-	if (com.Z == 0)
-		return FALSE;
-		*/
-
-	printf("Matching for existing calibration\n");
-	g_SkeletonCap->LoadCalibrationData(user, 0);
-	g_SkeletonCap->StartTracking(user);
-	g_nPlayer = user;
-
-	return TRUE;
-}
-
-
 void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
 	printf("New User %d\n", user);
@@ -127,32 +105,6 @@ void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void*
 	{
 		g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
 	}
-}
-
-
-void FindPlayer()
-{
-	if (g_nPlayer != 0)
-	{
-		return;
-	}
-	XnUserID aUsers[20];
-	XnUInt16 nUsers = 20;
-	g_UserGenerator.GetUsers(aUsers, nUsers);
-
-	for (int i = 0; i < nUsers; ++i)
-	{
-		if (AssignPlayer(aUsers[i]))
-			return;
-	}
-}
-
-
-void LostPlayer()
-{
-	g_nPlayer = 0;
-	FindPlayer();
-
 }
 
 
