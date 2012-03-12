@@ -23,9 +23,7 @@ ifeq ("$(OSTYPE)","Darwin")
 
 else
 		USED_LIBS += glut
-		USED_LIBS += cv
-		USED_LIBS += highgui
-		USED_LIBS += cxcore
+		LDFLAGS += $(shell pkg-config opencv --libs)
 		INC_DIRS += /usr/include/opencv
 endif
 
