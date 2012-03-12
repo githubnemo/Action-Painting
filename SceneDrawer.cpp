@@ -665,7 +665,6 @@ static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLef
     if (abs(y1 - y2) > MaxYDelta)
         return false;
 
-    //for (int i = 1; i < LineSize - 2; i++)
 	std::list<XnPoint3D>::const_iterator PositionIterator;
 
 	for(PositionIterator = ++(points.begin());
