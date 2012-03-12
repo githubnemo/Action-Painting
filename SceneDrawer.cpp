@@ -37,6 +37,7 @@
 #include "opengles.h"
 #endif
 
+#include <cmath>
 #include <cv.h>
 #include <highgui.h>
 
@@ -46,7 +47,6 @@
 extern xn::UserGenerator g_UserGenerator;
 extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
-extern XnUserID g_nPlayer;
 extern std::list<IplImage*> g_backgroundImages;
 
 // g_currentBackgroundImage is only a position indicator which background
@@ -62,10 +62,10 @@ GLfloat g_pfTexCoords[8];
 // g_nHistorySize is the amount of points to capture
 std::map<int, std::list<XnPoint3D> > g_History;
 XnFloat* g_pfPositionBuffer;
-int g_nHistorySize = 15;
+int g_nHistorySize = 30;
 // See DetectSwipe for details of the following 2 variables
-int g_swipeMinYDelta = 100;
-int g_swipeMinXDelta = 250;
+int g_swipeMaxYDelta = 100;
+int g_swipeMinWidth = 150;
 // swipe to right: image fades from left (fadeDirection = -1)
 // swipte to left: image fades from right (fadeDirection = 1)
 int g_fadeDirection = 1; // -1 from left, 0 none, +1 from right
@@ -208,11 +208,6 @@ static void glPrintString(void *font, char *str)
 // Draws part of the player's skeleton, conneting two parts with a line
 static void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 {
-	if (!g_UserGenerator.GetSkeletonCap().IsCalibrated(player))
-	{
-		printf("not calibrated!\n");
-		return;
-	}
 	if (!g_UserGenerator.GetSkeletonCap().IsTracking(player))
 	{
 		printf("not tracked!\n");
@@ -567,6 +562,17 @@ static bool checkKernelForGreen(
 }
 
 
+double CosineInterpolate(
+   double y1,double y2,
+   double mu)
+{
+   double mu2;
+
+   mu2 = (1-cos(mu*M_PI))/2;
+   return(y1*(1-mu2)+y2*mu2);
+}
+
+
 
 // Return true if buffer has reached size limit
 static bool CaptureHandMovement(
@@ -574,11 +580,20 @@ static bool CaptureHandMovement(
 	int handId,
 	XnPoint3D projectivePoint)
 {
+
+	size_t historySize = g_History[handId].size();
+
+	if(historySize > 0) {
+		double sY = CosineInterpolate(g_History[handId].back().Y, projectivePoint.Y, 1);
+		projectivePoint.Y = sY;
+	}
+
+
 	// Add new position to the history buffer
 	g_History[handId].push_front(projectivePoint);
 
 	// Keep size of history buffer
-	if (g_History[handId].size() > g_nHistorySize) {
+	if (historySize > g_nHistorySize) {
 		g_History[handId].pop_back();
 		return true;
 	}
@@ -586,28 +601,71 @@ static bool CaptureHandMovement(
 }
 
 
+
+static void CaptureSomeHandMovements(XnUserID player, int times) {
+	for(int i=0; i < times; i++) {
+		XnSkeletonJointPosition rightHandJoint, leftHandJoint;
+
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_LEFT_HAND, leftHandJoint);
+		g_UserGenerator.GetSkeletonCap().GetSkeletonJointPosition(player,
+				XN_SKEL_RIGHT_HAND, rightHandJoint);
+
+		if(rightHandJoint.fConfidence >= 0.5 && leftHandJoint.fConfidence >= 0.5) {
+			XnPoint3D points[] = {leftHandJoint.position, rightHandJoint.position};
+
+			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
+
+			CaptureHandMovement(player, 0, points[0]);
+			CaptureHandMovement(player, 1, points[1]);
+		}
+	}
+}
+
+
+static int calcF(double x, XnPoint3D &p0, XnPoint3D &pN) {
+	double m = (pN.Y - p0.Y) / (pN.X - p0.X);
+	double b = -m * p0.X + p0.Y;
+
+	return m*x + b;
+}
+
 // Stores the swipe direction in fromLeft parameter if it's not NULL
 static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLeft)
 {
-    int MinXDelta = g_swipeMinXDelta; // required horizontal distance
-    int MaxYDelta = g_swipeMinYDelta; // max mount of vertical variation
+    int MinWidth = g_swipeMinWidth; // required horizontal distance
+    int MaxYDelta = g_swipeMaxYDelta; // max mount of vertical variation
 
-    float x1 = (*(points.begin())).X;
-    float y1 = (*(points.begin())).Y;
-    float x2 = (*(points.end())).X;
-    float y2 = (*(points.end())).Y;
+	XnPoint3D begin = *points.begin();
+	XnPoint3D end = *(--points.end());
+
+    float x1 = begin.X;
+    float y1 = begin.Y;
+    float x2 = end.X;
+    float y2 = end.Y;
+
+	XnPoint3D p0;
+	XnPoint3D pN;
+
+	if(x1 < x2) {
+		p0 = begin;
+		pN = end;
+	} else {
+		p0 = end;
+		pN = begin;
+	}
 
 #if 0
-	cout << "x1: " << x1 << endl;
-	cout << "y1: " << y1 << endl;
-	cout << "x2: " << x2 << endl;
-	cout << "y2: " << y2 << endl;
+	std::cout << "x1: " << x1 << std::endl;
+	std::cout << "y1: " << y1 << std::endl;
+	std::cout << "x2: " << x2 << std::endl;
+	std::cout << "y2: " << y2 << std::endl;
 #endif
 
-    if (abs(x1 - x2) < MinXDelta)
+    if (abs(x1 - x2) < MinWidth)
         return false;
 
-    if (y1 - y2 > MaxYDelta)
+    if (abs(y1 - y2) > MaxYDelta)
         return false;
 
     //for (int i = 1; i < LineSize - 2; i++)
@@ -619,27 +677,11 @@ static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLef
     {
 		XnPoint3D point(*PositionIterator);
 
-        if (abs((point.Y - y1)) > MaxYDelta)
-            return false;
+		int okY = calcF(point.X, p0, pN);
 
-		// FIXME fix code below
-		continue;
-
-        float result =
-            (y2 - y1) * point.X +
-            (x2 - x1) * point.Y +
-            (x1 * y2 - x2 * y1);
-
-		//cout << "result: " << result << endl;
-
-		// This should be probably the other way around.
-		// result > |result| is never true. Negative values
-		// (the only way for result to be different than |result|)
-		// are never greater than a positive value.
-        if (result < abs(result))
-        {
-            return false;
-        }
+		if(abs(point.Y - okY) > MaxYDelta) {
+			return false;
+		}
     }
 
 	if(fromLeft != NULL) {
@@ -859,6 +901,10 @@ inline void DrawPlayer(
 	}
 
 
+	// Just look for some hand movements
+	CaptureSomeHandMovements(player, 2);
+
+
 	// Sponge detection
 	{
 		XnSkeletonJointPosition rightHandJoint, leftHandJoint;
@@ -897,12 +943,14 @@ inline void DrawPlayer(
 			// Imagine you smuding at point A then disabling smudge, going to
 			// point B and smudging again. What happens is, that the line
 			// between A and B is smudged, because A is the last known point.
+			//
+			// One could simply clear the point buffer?
 
-			if(isGreenLeft) {
+			if(true || isGreenLeft) {
 				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
 			}
 
-			if(isGreenRight) {
+			if(true || isGreenRight) {
 				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
 			}
 		}
@@ -911,7 +959,7 @@ inline void DrawPlayer(
 
 
 	// Draw skeleton of user
-	if (player != 0 && g_bDrawDebugInfo)
+	if (g_bDrawDebugInfo)
 	{
 		DrawPlayerSkeleton(player);
 	}
@@ -921,8 +969,7 @@ inline void DrawPlayer(
 void DrawScene(
 	const xn::DepthMetaData& dmd,
 	const xn::SceneMetaData& smd,
-	const xn::ImageMetaData& imd,
-	XnUserID player)
+	const xn::ImageMetaData& imd)
 {
 	static bool bInitialized = false;
 	static TextureData sceneTextureData;
@@ -943,7 +990,13 @@ void DrawScene(
 
 	DrawBackground(sceneTextureData);
 
-	DrawPlayer(sceneTextureData, smd, imd, player);
+	// Fetch player
+	XnUserID aUsers[1];
+	XnUInt16 nUsers = 1;
+
+	g_UserGenerator.GetUsers(aUsers, nUsers);
+
+	DrawPlayer(sceneTextureData, smd, imd, aUsers[0]);
 }
 
 
