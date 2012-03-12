@@ -45,6 +45,7 @@ int g_nFps = 0;
 int g_nDisplayedFps = 0;
 
 std::list<IplImage*> g_backgroundImages;
+std::list<IplImage*> g_backgroundImagesOriginal;
 
 
 #ifdef USE_GLUT
@@ -116,6 +117,23 @@ void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void*
 void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
 	printf("Lost user %d\n", user);
+
+	std::list<IplImage*>::iterator iter;
+	std::list<IplImage*>::const_iterator iter2;
+
+	for(iter = g_backgroundImages.begin(),
+		iter2 = g_backgroundImagesOriginal.begin();
+		iter != g_backgroundImages.end();
+		iter++, iter2++)
+	{
+		IplImage* org = *iter2;
+		IplImage* toRelease = *iter;
+		IplImage* copy = cvCloneImage(org);
+
+		cvReleaseImage(&toRelease);
+
+		g_backgroundImages.insert(iter, copy);
+	}
 }
 
 
@@ -356,6 +374,7 @@ bool loadBackgroundImages(const char* path) {
 			}
 
 			g_backgroundImages.push_front(img);
+			g_backgroundImagesOriginal.push_front(cvCloneImage(img));
 		}
 		myfile.close();
 		return true;
