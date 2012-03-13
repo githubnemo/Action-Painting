@@ -764,10 +764,10 @@ static void doSwipe(XnUserID player, XnPoint3D* points, bool isGreenLeft, bool i
 			// draw red line if swiped from left, draw
 			// blue one if swiped from right. Otherwise white.
 			if(swiped) {
-				if(fromLeft) {
+				if(fromLeft && !isGreenLeft) {
 					glColor4f(1,0,0,1);
 					DoFadeFromRight();
-				} else {
+				} else if(!fromLeft && !isGreenRight) {
 					glColor4f(0,0,1,1);
 					DoFadeFromLeft();
 				}
@@ -943,7 +943,6 @@ inline void DrawPlayer(
 				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 			}
 
-			// TODO only if red side of sponge is shown
 			doSwipe(player, points, isGreenLeft, isGreenRight);
 
 			// TODO reset last point of brush so that gaps are not smudged.
@@ -953,11 +952,11 @@ inline void DrawPlayer(
 			//
 			// One could simply clear the point buffer?
 
-			if(true || isGreenLeft) {
+			if(isGreenLeft) {
 				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
 			}
 
-			if(true || isGreenRight) {
+			if(isGreenRight) {
 				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
 			}
 		}
