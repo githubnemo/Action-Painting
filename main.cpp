@@ -139,9 +139,11 @@ void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void
 {
 	printf("Lost user %d\n", user);
 
-	SetState(STATE_SEARCHING);
+	if(g_UserGenerator.GetSkeletonCap().IsTracking(user)) {
+		SetState(STATE_SEARCHING);
 
-	resetBackgroundImages();
+		resetBackgroundImages();
+	}
 }
 
 
