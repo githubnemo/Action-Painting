@@ -535,7 +535,6 @@ static bool checkKernelForGreen(
 		short minPercent,
 		bool print)
 {
-	return true;
 	int green = 0, other = 1;
 
 	for(int i=-(maskSize/2); i < maskSize/2; i++) {
