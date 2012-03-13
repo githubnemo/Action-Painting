@@ -368,6 +368,14 @@ inline void DrawBackground(TextureData& sceneTextureData)
 						r = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 2];
 						g = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 1];
 						b = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 0];
+
+						// Use both images (new image more, old less) in
+						// border region
+						if(g_fadeXPosition - nX < 75) {
+							r = r*0.66 + pBgImage[2] * 0.33;
+							g = g*0.66 + pBgImage[1] * 0.33;
+							b = b*0.66 + pBgImage[0] * 0.33;
+						}
 					}
 					break;
 				case  1:
@@ -376,6 +384,12 @@ inline void DrawBackground(TextureData& sceneTextureData)
 						r = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 2];
 						g = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 1];
 						b = pFadeImageData[nFadeImageWidthStep * nY + nX*3 + 0];
+
+						if(nX - g_fadeXPosition < 75) {
+							r = r*0.66 + pBgImage[2] * 0.33;
+							g = g*0.66 + pBgImage[1] * 0.33;
+							b = b*0.66 + pBgImage[0] * 0.33;
+						}
 					}
 					break;
 			}
