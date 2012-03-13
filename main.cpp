@@ -10,6 +10,7 @@
 #include <XnCppWrapper.h>
 #include "SceneDrawer.h"
 #include "util.h"
+#include "states.h"
 
 #include <XnVNite.h>
 #include <XnVPointControl.h>
@@ -102,6 +103,14 @@ static void resetBackgroundImages(void);
 static bool loadBackgroundImages(const char* path);
 
 
+void SetState(State state) {
+	g_nState = state;
+}
+
+State GetState() {
+	return g_nState;
+}
+
 void CleanupExit()
 {
 	exit (1);
@@ -121,12 +130,16 @@ void XN_CALLBACK_TYPE NewUser(xn::UserGenerator& generator, XnUserID user, void*
 	{
 		g_UserGenerator.GetSkeletonCap().RequestCalibration(user, TRUE);
 	}
+
+	SetState(STATE_NEW_USER);
 }
 
 
 void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie)
 {
 	printf("Lost user %d\n", user);
+
+	SetState(STATE_SEARCHING);
 
 	resetBackgroundImages();
 }
@@ -164,7 +177,7 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton,
 	{
 		// Calibration failed
 		printf("Calibration failed for user %d\n", user);
-        if(eStatus==XN_CALIBRATION_STATUS_MANUAL_ABORT)
+        if(eStatus == XN_CALIBRATION_STATUS_MANUAL_ABORT)
         {
             printf("Manual abort occured, stop attempting to calibrate!");
             return;
