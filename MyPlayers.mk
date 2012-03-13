@@ -65,7 +65,9 @@ $(DATA): $(DATA_FOLDER)
 $(DATA_FOLDER)/%: Data/%
 	cp $< $@
 
-run: $(OUTPUT_FILE) $(DATA)
+prepare: $(DATA)
+
+run: $(OUTPUT_FILE) prepare
 	cd $(OUTPUT_DIR) && ./$(shell basename $<)
 
 debug: $(OUTPUT_FILE) $(DATA)
