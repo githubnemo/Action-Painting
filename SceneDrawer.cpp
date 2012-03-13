@@ -933,13 +933,21 @@ inline void DrawPlayer(
 
 			if(g_bDrawDebugInfo) {
 				sprintf(positionString, "green=%d", isGreenRight);
-				glColor4f(1,1,1,1);
+				if(isGreenRight)
+					glColor4f(0,1,0,1);
+				else
+					glColor4f(1,1,1,1);
 				glRasterPos2i(points[1].X, points[1].Y);
 				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
 
 				sprintf(positionString, "green=%d", isGreenLeft);
+				if(isGreenLeft)
+					glColor4f(0,1,0,1);
+				else
+					glColor4f(1,1,1,1);
 				glRasterPos2i(points[0].X, points[0].Y);
 				glPrintString(GLUT_BITMAP_HELVETICA_18, positionString);
+				glColor4f(1,1,1,1);
 			}
 
 			doSwipe(player, points, isGreenLeft, isGreenRight);
