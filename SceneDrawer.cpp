@@ -51,14 +51,10 @@ extern xn::DepthGenerator g_DepthGenerator;
 extern xn::ImageGenerator g_ImageGenerator;
 extern std::list<IplImage*> g_backgroundImages;
 
-// g_currentBackgroundImage is only a position indicator which background
-// image is currently active.
-//
-// g_pBgImg holds the address of the active background image.
-std::list<IplImage*>::const_iterator g_currentBackgroundImage;
-IplImage* g_pBgImg;
-GLfloat g_pfTexCoords[8];
+extern std::list<IplImage*>::const_iterator g_currentBackgroundImage;
+extern IplImage* g_pBgImg;
 
+static GLfloat g_pfTexCoords[8];
 
 // Swipe detection ಠ_ಠ
 // g_nHistorySize is the amount of points to capture

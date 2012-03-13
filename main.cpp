@@ -41,12 +41,18 @@ XnBool g_bCalibrated = FALSE;
 XnBool g_bNeedPose = FALSE;
 XnChar g_strPose[20] = "";
 
-int g_nFps = 0;
-int g_nDisplayedFps = 0;
+int g_nFps = 0;				// Current FPS
+int g_nDisplayedFps = 0;	// Displayed FPS (refreshed by timer)
+State g_nState = STATE_SEARCHING;	// State of the user
 
 std::list<IplImage*> g_backgroundImages;
 std::list<IplImage*> g_backgroundImagesOriginal;
 
+// g_currentBackgroundImage is only a position indicator which background
+// image is currently active.
+std::list<IplImage*>::const_iterator g_currentBackgroundImage;
+// g_pBgImg holds the address of the active background image.
+IplImage* g_pBgImg;
 
 #ifdef USE_GLUT
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
