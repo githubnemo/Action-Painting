@@ -465,6 +465,7 @@ int main(int argc, char **argv)
 	g_SkeletonCap = new xn::SkeletonCapability(g_UserGenerator.GetSkeletonCap());
 	g_SkeletonCap->SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
+	//g_UserGenerator.GetSkeletonCap().SetSmoothing(0.5f);
 
 	if (g_UserGenerator.GetSkeletonCap().NeedPoseForCalibration())
 	{

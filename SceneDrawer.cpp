@@ -732,7 +732,7 @@ void DoFadeFromLeft() {
 
 
 // Do swipe action if possible
-static void doSwipe(XnUserID player, XnPoint3D* points) {
+static void doSwipe(XnUserID player, XnPoint3D* points, bool isGreenLeft, bool isGreenRight) {
 	// Swipe detection to change background.
 	// Search for swipe gesture on each hand.
 	for(unsigned int handId=0; handId < 2; handId++)
@@ -784,6 +784,7 @@ static void doSwipe(XnUserID player, XnPoint3D* points) {
 				glPointSize(8);
 				glDrawArrays(GL_POINTS, 0, 1);
 			}
+
 			glFlush();
 		}
 	}
@@ -943,7 +944,7 @@ inline void DrawPlayer(
 			}
 
 			// TODO only if red side of sponge is shown
-			doSwipe(player, points);
+			doSwipe(player, points, isGreenLeft, isGreenRight);
 
 			// TODO reset last point of brush so that gaps are not smudged.
 			// Imagine you smuding at point A then disabling smudge, going to
