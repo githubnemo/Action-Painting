@@ -41,6 +41,7 @@ XnVFlowRouter* g_pFlowRouter;
 XnBool g_bCalibrated = FALSE;
 XnBool g_bNeedPose = FALSE;
 XnChar g_strPose[20] = "";
+XnUserID g_currentPlayer = 0;
 
 int g_nFps = 0;				// Current FPS
 int g_nDisplayedFps = 0;	// Displayed FPS (refreshed by timer)
@@ -139,7 +140,9 @@ void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void
 {
 	printf("Lost user %d\n", user);
 
-	if(g_UserGenerator.GetSkeletonCap().IsTracking(user)) {
+	if(user == g_currentPlayer) {
+		g_currentPlayer = 0;
+
 		SetState(STATE_SEARCHING);
 
 		resetBackgroundImages();
@@ -174,6 +177,7 @@ void XN_CALLBACK_TYPE CalibrationCompleted(xn::SkeletonCapability& skeleton,
 		// Calibration succeeded
 		printf("Calibration complete, start tracking user %d\n", user);
 		g_UserGenerator.GetSkeletonCap().StartTracking(user);
+		g_currentPlayer = user;
 	}
 	else
 	{
