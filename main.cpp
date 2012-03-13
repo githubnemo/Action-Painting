@@ -284,6 +284,9 @@ void glutKeyboard (unsigned char key, int x, int y)
 	case 's':
 		g_bDrawDebugInfo = !g_bDrawDebugInfo;
 		break;
+	case 'b':
+		resetBackgroundImages();
+		break;
 	case 'l':
 		DoFadeFromLeft();
 		break;
