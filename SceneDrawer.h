@@ -6,9 +6,12 @@
 
 #include <XnCppWrapper.h>
 #include <XnVPointControl.h>
+#include <cv.h>
 
 void DrawScene(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd,
 	const xn::ImageMetaData& imd);
+
+void SetBackgroundImage(std::list<IplImage*>::const_iterator img);
 
 void DoFadeFromLeft();
 

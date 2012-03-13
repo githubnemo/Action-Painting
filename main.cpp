@@ -335,13 +335,15 @@ void XN_CALLBACK_TYPE GestureProgressHandler(
 // Replace all background images with their original ones.
 // All modifications will be lost.
 static void resetBackgroundImages(void) {
-	std::list<IplImage*>::iterator iter;
+	std::list<IplImage*>::const_iterator iter;
 	std::list<IplImage*>::const_iterator iter2;
+
+	std::list<IplImage*> newBackgroundImages;
 
 	for(iter = g_backgroundImages.begin(),
 		iter2 = g_backgroundImagesOriginal.begin();
 		iter != g_backgroundImages.end();
-		iter++, iter2++)
+		++iter, ++iter2)
 	{
 		IplImage* org = *iter2;
 		IplImage* toRelease = *iter;
@@ -349,8 +351,14 @@ static void resetBackgroundImages(void) {
 
 		cvReleaseImage(&toRelease);
 
-		g_backgroundImages.insert(iter, copy);
+		newBackgroundImages.push_front(copy);
 	}
+
+	g_backgroundImages.clear();
+
+	g_backgroundImages = newBackgroundImages;
+
+	SetBackgroundImage(g_backgroundImages.begin());
 }
 
 

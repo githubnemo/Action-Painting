@@ -228,8 +228,9 @@ static IplImage* getBackgroundImage() {
 }
 
 
-static void setBackgroundImage(IplImage* img) {
-	g_pBgImg = img;
+void SetBackgroundImage(std::list<IplImage*>::const_iterator img) {
+	g_currentBackgroundImage = img;
+	g_pBgImg = *img;
 }
 
 
@@ -323,8 +324,7 @@ inline void DrawBackground(TextureData& sceneTextureData)
 
 	if(!bInitialized) {
 		// Take first image in list as initial background
-		setBackgroundImage(*(g_backgroundImages.begin()));
-		g_currentBackgroundImage = g_backgroundImages.begin();
+		SetBackgroundImage(g_backgroundImages.begin());
 
 		bInitialized = true;
 	}
@@ -396,12 +396,11 @@ inline void DrawBackground(TextureData& sceneTextureData)
 	if((g_fadeDirection == -1 && g_fadeXPosition >= nXRes) ||
 	   (g_fadeDirection ==  1 && g_fadeXPosition <= 0))
 	{
-		g_currentBackgroundImage = getFadeBackgroundIterator();
-
+		SetBackgroundImage(getFadeBackgroundIterator());
 		g_fadeDirection = 0;
 		g_fadeXPosition = 0;
 
-		setBackgroundImage(*g_currentBackgroundImage);
+
 	} else if(g_fadeDirection == -1) {
 		g_fadeXPosition += g_fadeStep;
 	} else if(g_fadeDirection ==  1) {
