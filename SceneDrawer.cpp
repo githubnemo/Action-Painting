@@ -538,7 +538,8 @@ static int checkKernelForGreen(
 		XnPoint3D p,
 		short maskSize)
 {
-	int green = 0, other = 1;
+	int green = 0;
+	int total = 1;
 
 	for(int i=-(maskSize/2); i < maskSize/2; i++) {
 		int yoffset = texData.XRes * ((int)p.Y+i) * 3;
@@ -549,9 +550,8 @@ static int checkKernelForGreen(
 			if((int)p.X+j < texData.XRes && (int)p.Y+i < texData.YRes)
 			{
 				const XnUInt8* current = &img[offset];
-
-				other += current[0] + current[1] + current[2];
 				green += current[1];
+				total += current[0] + current[1] + current[2];
 			}
 		}
 	}
@@ -561,7 +561,11 @@ static int checkKernelForGreen(
 		DrawRectangle(p.X - maskSize/2, p.Y - maskSize/2, p.X + maskSize/2, p.Y + maskSize/2);
 	}
 
-	return (double)green/other * 100;
+	//double total = maskSize/2 * maskSize/2 * 765; // 765 = 255*3
+
+	printf("ckfg: %d :: %d\n", green, total);
+
+	return ((double)green/total) * 100;
 }
 
 
