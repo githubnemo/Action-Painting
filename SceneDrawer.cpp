@@ -539,7 +539,6 @@ static int checkKernelForGreen(
 		short maskSize)
 {
 	int green = 0;
-	int total = 1;
 
 	for(int i=-(maskSize/2); i < maskSize/2; i++) {
 		int yoffset = texData.XRes * ((int)p.Y+i) * 3;
@@ -550,8 +549,8 @@ static int checkKernelForGreen(
 			if((int)p.X+j < texData.XRes && (int)p.Y+i < texData.YRes)
 			{
 				const XnUInt8* current = &img[offset];
+
 				green += current[1];
-				total += current[0] + current[1] + current[2];
 			}
 		}
 	}
@@ -563,9 +562,9 @@ static int checkKernelForGreen(
 
 	//double total = maskSize/2 * maskSize/2 * 765; // 765 = 255*3
 
-	printf("ckfg: %d :: %d\n", green, total);
+	int maxGreen = maskSize * maskSize * 255;
 
-	return ((double)green/total) * 100;
+	return ((double)green/maxGreen) * 100;
 }
 
 
