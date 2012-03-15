@@ -620,14 +620,35 @@ static int calcF(double x, XnPoint3D &p0, XnPoint3D &pN) {
 	return m*x + b;
 }
 
+
+static int calculateSwipeMinWidth(XnPoint3D reference) {
+	// 700 - 2500 (nearest - farthest)
+	// map to
+	// 250 - 150
+
+	/*
+	int y1 = 700;
+	int y2 = 2500;
+	int x1 = 250;
+	int x2 = 150;
+	*/
+
+	int result = -1.0/18 * reference.Z + (250 + (700.0/18));
+
+	//printf("Z: %lf, Res: %d\n", reference.Z, result);
+	//return g_swipeMinWidth;
+	return result;
+}
+
+
 // Stores the swipe direction in fromLeft parameter if it's not NULL
 static bool DetectSwipe(int LineSize, std::list<XnPoint3D> points, bool* fromLeft)
 {
-    int MinWidth = g_swipeMinWidth; // required horizontal distance
-    int MaxYDelta = g_swipeMaxYDelta; // max mount of vertical variation
-
 	XnPoint3D begin = *points.begin();
 	XnPoint3D end = *(--points.end());
+
+    int MinWidth = calculateSwipeMinWidth(begin); // required horizontal distance
+    int MaxYDelta = g_swipeMaxYDelta; // max mount of vertical variation
 
     float x1 = begin.X;
     float y1 = begin.Y;
@@ -740,8 +761,7 @@ static void doSwipe(XnUserID player, XnPoint3D* points, bool isGreenLeft, bool i
 				g_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
 			}
 
-			// Set color
-			// Draw buffer:
+
 			bool fromLeft = false;
 			bool swiped = DetectSwipe(g_nHistorySize, g_History[handId], &fromLeft);
 
