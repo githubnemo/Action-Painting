@@ -63,7 +63,7 @@ XnFloat* g_pfPositionBuffer;
 int g_nHistorySize = 30;
 // See DetectSwipe for details of the following 2 variables
 int g_swipeMaxYDelta = 100;
-int g_swipeMinWidth = 250;
+int g_swipeMinWidth = 180;
 // swipe to right: image fades from left (fadeDirection = -1)
 // swipte to left: image fades from right (fadeDirection = 1)
 int g_fadeDirection = 1; // -1 from left, 0 none, +1 from right
