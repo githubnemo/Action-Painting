@@ -73,6 +73,11 @@ int g_fadeStep = 50;	 // How many pixels fade per step
 
 bool g_bDrawDebugInfo = false;
 
+int g_nMaxGapBetweenMovement = 50; // px
+bool g_bLastWasGreenLeft = false;
+bool g_bLastWasGreenRight = false;
+
+enum Hands {HAND_LEFT=0, HAND_RIGHT, HANDS};
 
 /* Brush settings */
 
@@ -527,13 +532,11 @@ inline XnLabel* SmoothenUserPixels(
 
 // Check the kernel sized maskSize*maskSize around point p for green
 // color. If the green amount is high enough (>minPercent) true is returned.
-static bool checkKernelForGreen(
+static int checkKernelForGreen(
 		const TextureData& texData,
 		const XnUInt8* img,
 		XnPoint3D p,
-		short maskSize,
-		short minPercent,
-		bool print)
+		short maskSize)
 {
 	int green = 0, other = 1;
 
@@ -553,9 +556,9 @@ static bool checkKernelForGreen(
 		}
 	}
 
-	if(print) {
-		printf("%d, %d => %lf (%d)\n", green, other, (double)green/other * 100,
-			(double)green/other * 100 > minPercent);
+	if(g_bDrawDebugInfo) {
+		glColor4f(1,1,1,1);
+		DrawRectangle(p.X - maskSize/2, p.Y - maskSize/2, p.X + maskSize/2, p.Y + maskSize/2);
 	}
 
 	return (double)green/other * 100 > minPercent;
@@ -789,6 +792,49 @@ static void doSwipe(XnUserID player, XnPoint3D* points, bool isGreenLeft, bool i
 	}
 }
 
+static bool checkForMovementGap(XnPoint3D currentPoint, XnPoint3D lastPoint) {
+	return abs(currentPoint.X - lastPoint.X) > g_nMaxGapBetweenMovement
+		|| abs(currentPoint.Y - lastPoint.Y) > g_nMaxGapBetweenMovement;
+}
+
+
+static void checkHandsForGreen(const TextureData& sceneTextureData, const XnUInt8* realWorldImage, XnPoint3D* currentHandPoints, bool* isGreenLeft, bool* isGreenRight) {
+	for(int hand=0; hand < 2; hand++) {
+		if(g_History[hand].size() == 0)
+			continue;
+
+#define GREEN_KERNEL_SIZE 32
+#define GREEN_MIN_PERCENT 22
+
+		if(!checkForMovementGap(currentHandPoints[hand], *(--g_History[hand].end()))) {
+			int greenPercentage = checkKernelForGreen(sceneTextureData, realWorldImage, currentHandPoints[hand], GREEN_KERNEL_SIZE);
+
+			if(g_bDrawDebugInfo) {
+				char percentage[20] = "";
+				if(greenPercentage > GREEN_MIN_PERCENT)
+					glColor4f(0,1,0,1);
+				else
+					glColor4f(1,1,0,1);
+				glRasterPos2i(currentHandPoints[hand].X, currentHandPoints[hand].Y + 50);
+				sprintf(percentage, "%d%%", greenPercentage);
+				glPrintString(GLUT_BITMAP_HELVETICA_18, percentage);
+			}
+
+			bool isGreen = greenPercentage > GREEN_MIN_PERCENT;
+
+			switch(hand) {
+				case HAND_LEFT: g_bLastWasGreenLeft = isGreen;
+								break;
+				case HAND_RIGHT: g_bLastWasGreenRight = isGreen;
+								break;
+			}
+		}
+	}
+
+	*isGreenLeft = g_bLastWasGreenLeft;
+	*isGreenRight = g_bLastWasGreenRight;
+}
+
 
 inline void DrawPlayer(
 		const TextureData& sceneTextureData,
@@ -926,10 +972,7 @@ inline void DrawPlayer(
 
 			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
 
-			isGreenLeft = checkKernelForGreen(sceneTextureData,
-					imd.Data(), points[0], 15, 32, false);
-			isGreenRight = checkKernelForGreen(sceneTextureData,
-					imd.Data(), points[1], 15, 32, false);
+			checkHandsForGreen(sceneTextureData, imd.Data(), points, &isGreenLeft, &isGreenRight);
 
 			if(g_bDrawDebugInfo) {
 				sprintf(positionString, "green=%d", isGreenRight);
