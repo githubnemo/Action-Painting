@@ -561,18 +561,7 @@ static int checkKernelForGreen(
 		DrawRectangle(p.X - maskSize/2, p.Y - maskSize/2, p.X + maskSize/2, p.Y + maskSize/2);
 	}
 
-	return (double)green/other * 100 > minPercent;
-}
-
-
-double CosineInterpolate(
-   double y1,double y2,
-   double mu)
-{
-   double mu2;
-
-   mu2 = (1-cos(mu*M_PI))/2;
-   return(y1*(1-mu2)+y2*mu2);
+	return (double)green/other * 100;
 }
 
 
@@ -583,14 +572,7 @@ static bool CaptureHandMovement(
 	int handId,
 	XnPoint3D projectivePoint)
 {
-
 	size_t historySize = g_History[handId].size();
-
-	if(historySize > 0) {
-		double sY = CosineInterpolate(g_History[handId].back().Y, projectivePoint.Y, 1);
-		projectivePoint.Y = sY;
-	}
-
 
 	// Add new position to the history buffer
 	g_History[handId].push_front(projectivePoint);
@@ -910,18 +892,6 @@ inline void DrawPlayer(
 						pDestImage[1] = 0;
 						pDestImage[2] = 0;
 					}
-
-					/*
-					if((pDestImage[0] + value < 255 && pDestImage[0] + value > 0)
-					&& (pDestImage[1] + value < 255 && pDestImage[1] + value > 0)
-					&& (pDestImage[2] + value < 255 && pDestImage[2] + value > 0))
-					{
-						pDestImage[0] += value;
-
-						pDestImage[1] += value;
-
-						pDestImage[2] += value;
-					}*/
 				}
 
 				pLabels++;
