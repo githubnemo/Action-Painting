@@ -974,10 +974,14 @@ inline void DrawPlayer(
 
 			if(isGreenLeft) {
 				SmudgeAtPosition(sceneTextureData, points[0].X, points[0].Y, 0);
+			} else {
+				brushes[0].resetState();
 			}
 
 			if(isGreenRight) {
 				SmudgeAtPosition(sceneTextureData, points[1].X, points[1].Y, 1);
+			} else {
+				brushes[1].resetState();
 			}
 		}
 	}
