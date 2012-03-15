@@ -961,7 +961,7 @@ inline void DrawPlayer(
 		if(rightHandJoint.fConfidence >= 0.5 && leftHandJoint.fConfidence >= 0.5) {
 			XnPoint3D points[2] = {leftHandJoint.position, rightHandJoint.position};
 			char positionString[25];
-			bool isGreenLeft = false, isGreenRight = false;
+			bool isGreenLeft = true, isGreenRight = true;
 
 			g_DepthGenerator.ConvertRealWorldToProjective(2,points,points);
 
@@ -988,7 +988,6 @@ inline void DrawPlayer(
 
 			doSwipe(player, points, isGreenLeft, isGreenRight);
 
-			// TODO reset last point of brush so that gaps are not smudged.
 			// Imagine you smuding at point A then disabling smudge, going to
 			// point B and smudging again. What happens is, that the line
 			// between A and B is smudged, because A is the last known point.
